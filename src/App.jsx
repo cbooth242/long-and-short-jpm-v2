@@ -1444,13 +1444,31 @@ const EmailPreviewContent = ({ c_content, templateName, metadata }) => {
   const team = metadata?.team || 'GIS';
 
   return (
-    <div style={{ background: '#F4F4F4', minHeight: '100%', padding: '32px 20px', fontFamily: 'Arial, Helvetica, sans-serif' }}>
+    <div style={{ background: '#E8E8E8', minHeight: '100%', padding: '40px 24px', fontFamily: 'Arial, Helvetica, sans-serif', boxSizing: 'border-box' }}>
       {/* Email client chrome */}
       <div style={{ maxWidth: 600, margin: '0 auto' }}>
-        {/* Pre-header */}
-        <div style={{ fontSize: 11, color: '#888', marginBottom: 12, paddingLeft: 4 }}>
-          From: <strong>JPMorgan Private Bank GIS</strong> &lt;gis-content@jpmorgan.com&gt;<br/>
-          Subject: {title}
+        {/* Email client header bar */}
+        <div style={{ background: '#fff', borderRadius: 6, padding: '12px 16px', marginBottom: 2, boxShadow: '0 1px 3px rgba(0,0,0,0.08)', fontFamily: 'Arial, sans-serif' }}>
+          <div style={{ display: 'flex', gap: 8, marginBottom: 6 }}>
+            <span style={{ fontSize: 10, color: '#999', width: 50 }}>From:</span>
+            <span style={{ fontSize: 10, color: '#222', fontWeight: 600 }}>JPMorgan Private Bank GIS &lt;gis-content@jpmorgan.com&gt;</span>
+          </div>
+          <div style={{ display: 'flex', gap: 8, marginBottom: 6 }}>
+            <span style={{ fontSize: 10, color: '#999', width: 50 }}>To:</span>
+            <span style={{ fontSize: 10, color: '#555' }}>Your Client Advisory Team</span>
+          </div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <span style={{ fontSize: 10, color: '#999', width: 50 }}>Subject:</span>
+            <span style={{ fontSize: 10, color: '#222', fontWeight: 600 }}>{title}</span>
+          </div>
+        </div>
+        <div style={{ background: '#fff', borderRadius: 6, padding: '4px 16px', marginBottom: 8, boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
+          <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
+            <span style={{ fontSize: 9, color: '#999' }}>{date}</span>
+            <span style={{ fontSize: 9, color: '#4A90E2', cursor: 'pointer' }}>Reply</span>
+            <span style={{ fontSize: 9, color: '#4A90E2', cursor: 'pointer' }}>Forward</span>
+            <span style={{ fontSize: 9, color: '#4A90E2', cursor: 'pointer' }}>Archive</span>
+          </div>
         </div>
         {/* Email body */}
         <div style={{ background: '#ffffff', borderRadius: 4, overflow: 'hidden', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
@@ -1539,7 +1557,7 @@ const VisualChartContent = ({ c_content, templateName }) => {
     setLoading(false);
   };
 
-  const maxVal = chartData ? Math.max(...(chartData.data||[]).map(d => Math.max(d.value||0, d.value2||0))) : 1;
+  const maxVal = chartData && chartData.data && chartData.data.length > 0 ? Math.max(...chartData.data.map(d => Math.max(d.value||0, d.value2||0)), 1) : 1;
 
   return (
     <div style={{ fontFamily: 'Arial, sans-serif', maxWidth: 700, margin: '0 auto', padding: 24 }}>
@@ -5142,7 +5160,7 @@ const DataTaxonomyTab = ({ items, mode, onUpdateTags }) => {
   const [selectedTag, setSelectedTag] = React.useState(null);
 
   const ASSET_CLASSES = ['Multi-Asset', 'Fixed Income', 'Equities', 'Alternatives', 'FX', 'Commodities', 'Private Markets'];
-  const REGIONS = ['Global', 'EMEA', 'Asia', 'Latin America', 'US'];
+  const REGIONS = ['Global', 'APAC', 'EMEA', 'LATAM', 'US'];
   const TEMPLATE_TYPES = ['Top Market Takeaways', 'Desk Commentary', 'Macro & Markets', 'Ideas & Insights', 'Morning Meeting', 'Specialist Spotlight', 'Trade Idea', 'Chart of the Week', 'Event Response', 'Video Publish'];
 
   // Aggregate tag usage across all items
@@ -6663,22 +6681,23 @@ const ContentCircle = ({ currentContent, libraryItems, onOpen }) => {
 
 // ── FORWARD LOOK TAB ─────────────────────────────────────────────────────────
 const FORWARD_EVENTS_2026 = [
-  { date:'2026-05-13', type:'macro', title:'US CPI (April)', region:'US', importance:'high', description:'Core CPI consensus ~2.6% YoY. Key test for Fed patience.' },
-  { date:'2026-05-14', type:'macro', title:'UK GDP (Q1 advance)', region:'UK', importance:'medium', description:'Consensus +0.3% QoQ. Watch for construction drag.' },
-  { date:'2026-05-19', type:'macro', title:'FOMC Minutes (May meeting)', region:'US', importance:'high', description:'Detail on committee thinking re: rate path.' },
-  { date:'2026-05-22', type:'earnings', title:'NVIDIA Q1 FY2027 Earnings', ticker:'NVDA', region:'US', importance:'high', description:'Data centre revenue key metric. Options pricing +/-9% move.' },
-  { date:'2026-05-27', type:'central-bank', title:'ECB Meeting Minutes', region:'EU', importance:'medium', description:'Lagarde guidance on summer cut path.' },
-  { date:'2026-06-02', type:'macro', title:'US NFP (May)', region:'US', importance:'high', description:'Labour market health check. Fed watch carefully.' },
-  { date:'2026-06-10', type:'central-bank', title:'Fed Rate Decision', region:'US', importance:'high', description:'Market pricing 75% hold. Key Powell presser.' },
-  { date:'2026-06-12', type:'earnings', title:'JP Morgan Q2 Earnings', ticker:'JPM', region:'US', importance:'high', description:'IB revival read-through. Net interest margin under pressure.' },
-  { date:'2026-06-18', type:'macro', title:'FOMC June SEP / Dot Plot', region:'US', importance:'high', description:'Updated rate projections for 2026-2027.' },
-  { date:'2026-06-24', type:'geopolitical', title:'G7 Summit', region:'Global', importance:'medium', description:'Trade policy, Ukraine, China tensions on agenda.' },
-  { date:'2026-07-07', type:'macro', title:'US NFP (June)', region:'US', importance:'high', description:'Summer employment picture.' },
-  { date:'2026-07-14', type:'earnings', title:'Goldman Sachs Q2 Earnings', ticker:'GS', region:'US', importance:'high', description:'Trading revenues and M&A pipeline.' },
-  { date:'2026-07-21', type:'central-bank', title:'ECB Rate Decision', region:'EU', importance:'high', description:'Third 2026 cut likely. Watch Lagarde on neutral rate.' },
-  { date:'2026-07-28', type:'macro', title:'US GDP Q2 Advance', region:'US', importance:'high', description:'First read on Q2 growth. Consensus +1.6% annualised.' },
-  { date:'2026-08-04', type:'macro', title:'BoE Rate Decision', region:'UK', importance:'high', description:'Cut expected — 4th of the cycle. GBP sensitive.' },
+  { date:'2026-05-13', type:'macro', title:'US CPI (April)', ticker:null, region:'US', importance:'high', isKey:true, description:'Core CPI consensus ~2.6% YoY. Crucial test for Fed patience and rate path.', consensus:'Core CPI: 2.6% YoY / Headline: 2.4% YoY', lastResult:'Core 2.7% (March) — above consensus', jpmView:'Sticky services inflation likely to keep core elevated. Watch for shelter component.' },
+  { date:'2026-05-14', type:'macro', title:'UK GDP Q1 Advance', ticker:null, region:'UK', importance:'medium', isKey:false, description:'First read on Q1 growth.', consensus:'+0.3% QoQ / +1.1% YoY', lastResult:'+0.1% QoQ (Q4 2025)', jpmView:'Construction drag likely to persist. Consumer spending the bright spot.' },
+  { date:'2026-05-19', type:'central-bank', title:'FOMC Minutes (May)', ticker:null, region:'US', importance:'high', isKey:true, description:'Detail on committee thinking re: rate path and inflation tolerance.', consensus:'Expect hawkish hold language', lastResult:'March minutes showed divided committee on pace of cuts', jpmView:'Key read on whether June cut remains live. Watch language on labour market.' },
+  { date:'2026-05-22', type:'earnings', title:'NVIDIA Q1 FY2027', ticker:'NVDA', region:'US', importance:'high', isKey:true, description:'Largest single earnings event of the quarter. Data centre revenue is the only metric that matters.', consensus:'EPS: $0.94e / Revenue: $43.2Bn / Data Centre: $38.5Bn', lastResult:'Q4: EPS $0.89 beat $0.84e / Rev $39.3Bn beat $38.0Bn', jpmView:'Options pricing ~9% move. Guidance on Blackwell ramp and China export controls key.' },
+  { date:'2026-05-27', type:'central-bank', title:'ECB Meeting Minutes', ticker:null, region:'EU', importance:'medium', isKey:false, description:'Post-June meeting guidance on summer cut path.', consensus:'Confirm June cut, signal July pause', lastResult:'April: 25bp cut, 3rd of the cycle', jpmView:'Lagarde likely to remain data-dependent on July. EUR sensitive.' },
+  { date:'2026-06-02', type:'macro', title:'US NFP (May)', ticker:null, region:'US', importance:'high', isKey:true, description:'Labour market health check. Fed watches very carefully.', consensus:'Non-farm payrolls: +185k / Unemployment: 4.4%', lastResult:'+162k (April) / UE 4.4%', jpmView:'Two consecutive sub-200k prints would meaningfully shift Fed pricing. Watch wages.' },
+  { date:'2026-06-10', type:'central-bank', title:'Fed Rate Decision', ticker:null, region:'US', importance:'high', isKey:true, description:'Market pricing 75% hold. Key Powell press conference.', consensus:'Hold at 4.25-4.50%. One dissent expected.', lastResult:'Hold — March. Dot plot: 2 cuts for 2026', jpmView:'No cut expected. Powell language on when conditions will be met is the market mover.' },
+  { date:'2026-06-12', type:'earnings', title:'JP Morgan Q2 Earnings', ticker:'JPM', region:'US', importance:'high', isKey:true, description:'First major bank. IB revival read-through. NIM under pressure.', consensus:'EPS: $4.62e / Revenue: $44.1Bn / NII: $23.2Bn', lastResult:'Q1: EPS $5.07 beat $4.61e — strong IB and trading', jpmView:'Watch NII guidance for H2. Credit card charge-offs a key consumer health indicator.' },
+  { date:'2026-06-18', type:'macro', title:'FOMC SEP / Dot Plot', ticker:null, region:'US', importance:'high', isKey:true, description:'Updated rate projections. Most market-moving Fed output of the year.', consensus:'Median dot: 2 cuts 2026, 3 cuts 2027', lastResult:'March: Median 2 cuts 2026, 3 cuts 2027', jpmView:'Risk of hawkish shift to 1 cut 2026 if CPI stays sticky. USD bullish if so.' },
+  { date:'2026-06-24', type:'geopolitical', title:'G7 Summit', ticker:null, region:'Global', importance:'medium', isKey:false, description:'Trade policy, Ukraine reconstruction, China tensions on agenda.', consensus:'No major market-moving decisions expected', lastResult:'2025: Ukraine aid package agreed', jpmView:'Communiqué language on China trade will be watched by EM investors.' },
+  { date:'2026-07-07', type:'macro', title:'US NFP (June)', ticker:null, region:'US', importance:'high', isKey:true, description:'Summer employment picture ahead of July Fed meeting.', consensus:'+180k / UE 4.4%', lastResult:'+162k (May)', jpmView:'Tipping point: sub-150k would likely lock in September cut.' },
+  { date:'2026-07-14', type:'earnings', title:'Goldman Sachs Q2', ticker:'GS', region:'US', importance:'high', isKey:false, description:'Trading revenues and M&A pipeline quality.', consensus:'EPS: $8.45e / Revenue: $13.2Bn', lastResult:'Q1: EPS $9.60 beat — equities trading strong', jpmView:'M&A pipeline backlog the key forward indicator. Watch mgmt commentary on deal activity.' },
+  { date:'2026-07-21', type:'central-bank', title:'ECB Rate Decision', ticker:null, region:'EU', importance:'high', isKey:true, description:'4th cut of the cycle likely.', consensus:'25bp cut to 2.00%. July pause signalled.', lastResult:'June: 25bp cut. Lagarde: data-dependent on further', jpmView:'EUR likely to trade higher on "done for now" language. Watch inflation projections.' },
+  { date:'2026-07-28', type:'macro', title:'US GDP Q2 Advance', ticker:null, region:'US', importance:'high', isKey:true, description:'First read on Q2 growth. Key recession risk barometer.', consensus:'+1.6% annualised / Consumer spending +1.8%', lastResult:'Q1: +1.2% (below consensus +1.6%)', jpmView:'Second consecutive sub-2% print would validate our cautious positioning on US equities.' },
+  { date:'2026-08-04', type:'central-bank', title:'BoE Rate Decision', ticker:null, region:'UK', importance:'high', isKey:false, description:'4th cut of the cycle.', consensus:'25bp cut to 3.75%. 7-2 vote expected.', lastResult:'May: 25bp cut — Bailey dovish on UK growth', jpmView:'GBP likely to weaken modestly. UK gilts should rally on cut confirmation.' },
 ];
+
 
 const ForwardLookTab = () => {
   const [view, setView] = React.useState('calendar');
@@ -6731,6 +6750,7 @@ const ForwardLookTab = () => {
               <span style={{ fontSize:9, fontWeight:700, padding:'2px 7px', borderRadius:10, background:typeColor[event.type]+'18', color:typeColor[event.type] }}>
                 {typeLabel[event.type]}
               </span>
+              {event.isKey && <span style={{ fontSize:9, fontWeight:700, padding:'2px 7px', borderRadius:10, background:'#FFF9E6', color:c.gold }}>★ Key Event</span>}
               {event.importance === 'high' && <span style={{ fontSize:9, fontWeight:700, color:'#DC2626' }}>●</span>}
               <span style={{ fontSize:9, color:c.slate }}>{event.region}</span>
             </div>
@@ -6747,7 +6767,25 @@ const ForwardLookTab = () => {
             )}
           </div>
         </div>
-        <div style={{ fontSize:12, color:c.slate, lineHeight:1.5 }}>{event.description}</div>
+        <div style={{ fontSize:12, color:c.slate, lineHeight:1.5, marginBottom: event.consensus ? 8 : 0 }}>{event.description}</div>
+        {event.consensus && (
+          <div style={{ background: '#F0F9FF', borderRadius: 6, padding: '7px 10px', marginBottom: 6 }}>
+            <div style={{ fontSize: 9, fontWeight: 700, color: c.teal, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 3 }}>Consensus Estimate</div>
+            <div style={{ fontSize: 11, color: c.navy, fontWeight: 600 }}>{event.consensus}</div>
+          </div>
+        )}
+        {event.lastResult && (
+          <div style={{ background: c.ivory, borderRadius: 6, padding: '7px 10px', marginBottom: 6 }}>
+            <div style={{ fontSize: 9, fontWeight: 700, color: c.slate, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 3 }}>Last Result</div>
+            <div style={{ fontSize: 11, color: c.slate }}>{event.lastResult}</div>
+          </div>
+        )}
+        {event.jpmView && (
+          <div style={{ borderLeft: '3px solid ' + c.gold, paddingLeft: 8 }}>
+            <div style={{ fontSize: 9, fontWeight: 700, color: c.gold, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 2 }}>JPM View</div>
+            <div style={{ fontSize: 11, color: c.navy, fontStyle: 'italic' }}>{event.jpmView}</div>
+          </div>
+        )}
         {bm && (
           <div style={{ marginTop:8, padding:'8px 10px', background:bm.verdict==='beat'?'#F0FDF4':bm.verdict==='miss'?'#FFF1F1':'#F9FAFB', borderRadius:6, display:'flex', gap:10, alignItems:'center' }}>
             <span style={{ fontSize:11, fontWeight:700, color:verdictColor[bm.verdict]||'#6B7280', textTransform:'uppercase' }}>{bm.verdict}</span>
@@ -6818,6 +6856,16 @@ const ForwardLookTab = () => {
 };
 
 // ── ABOUT THIS PLATFORM TAB ──────────────────────────────────────────────────
+
+const StyleSection = ({ title, children, last }) => (
+  <div style={{ marginBottom: last ? 0 : 32, paddingBottom: last ? 0 : 32, borderBottom: last ? 'none' : '1px solid #E8E0D0' }}>
+    <h3 style={{ fontFamily: 'Georgia, serif', fontSize: 17, color: '#0A1A2F', margin: '0 0 14px', fontWeight: 700 }}>{title}</h3>
+    <div style={{ fontSize: 13, lineHeight: 1.8, color: '#4A5568', fontFamily: 'Georgia, serif' }}>
+      {children}
+    </div>
+  </div>
+);
+
 const AboutTab = () => {
   const [section, setSection] = React.useState('publications');
   const [expanded, setExpanded] = React.useState({});
@@ -7066,22 +7114,90 @@ const AboutTab = () => {
       )}
 
       {section === 'styleguide' && (
-        <div>
-          {styleGuideItems.map((item, i) => {
-            const isOpen = expanded['sg_'+i];
-            return (
-              <div key={i} style={{ background:'#fff', border:'1px solid '+c.pearl, borderRadius:10, marginBottom:8, overflow:'hidden' }}>
-                <div onClick={() => toggle('sg_'+i)}
-                  style={{ padding:'14px 18px', display:'flex', justifyContent:'space-between', alignItems:'center', cursor:'pointer', background:isOpen?c.ivory:'#fff' }}>
-                  <div style={{ fontSize:13, fontWeight:700, color:c.navy }}>{item.rule}</div>
-                  <span style={{ fontSize:16, color:c.slate }}>{isOpen ? '▲' : '▼'}</span>
+        <div style={{ background:'#fff', border:'1px solid '+c.pearl, borderRadius:12, overflow:'hidden' }}>
+          {/* One unified style guide document */}
+          <div style={{ background:c.navy, padding:'20px 28px' }}>
+            <div style={{ fontSize:10, fontWeight:700, color:c.gold, textTransform:'uppercase', letterSpacing:'0.1em', marginBottom:4 }}>J.P. Morgan Private Bank · GIS</div>
+            <div style={{ fontSize:20, fontFamily:'Georgia, serif', color:'#fff', fontWeight:400 }}>Content Style Guide</div>
+            <div style={{ fontSize:11, color:'rgba(255,255,255,0.5)', marginTop:4 }}>Applies across all publications · Long & Short v2</div>
+          </div>
+          <div style={{ padding:'28px 32px', fontFamily:'Georgia, serif' }}>
+
+            <StyleSection title="The Voice">
+              <p>J.P. Morgan Private Bank GIS writes for one reader: an intelligent, time-constrained UHNW client or their advisor. Every piece should help that reader <em>think better</em> — not just feel informed.</p>
+              <p>The voice is: <strong>calm</strong> (never alarmist), <strong>measured</strong> (qualified where necessary, but not hedged into uselessness), <strong>intellectually confident</strong> (we have a view; we state it), <strong>analytical but accessible</strong> (rigour without jargon), and <strong>forward-looking</strong> ("what does this mean" not "what just happened").</p>
+              <p>It is never: marketing language ("exciting opportunity", "unique positioning"), bullet-pointed where prose would serve better, sensational (no exclamation marks), or excessively hedged ("could potentially perhaps suggest").</p>
+            </StyleSection>
+
+            <StyleSection title="The Core Rule: Lead With Conclusion">
+              <p>Every piece — every section, every paragraph — leads with the conclusion.</p>
+              <p style={{ background:c.ivory, padding:'12px 16px', borderLeft:'3px solid '+c.neg, borderRadius:'0 6px 6px 0', fontSize:13 }}><strong>Wrong:</strong> "Markets have been volatile recently, with the Fed raising rates and inflation proving stickier than expected. This has caused some uncertainty. We believe this may affect equities."</p>
+              <p style={{ background:c.ivory, padding:'12px 16px', borderLeft:'3px solid '+c.pos, borderRadius:'0 6px 6px 0', fontSize:13 }}><strong>Right:</strong> "Equities face a tougher path. The Fed's higher-for-longer stance is compressing multiples precisely as earnings growth slows — a combination that historically resolves lower before it resolves higher."</p>
+              <p>The reader should know the conclusion by the end of the first sentence. This is the JPM/Bridgewater principle: state the view, then prove it.</p>
+            </StyleSection>
+
+            <StyleSection title="Word Targets by Format">
+              {[['Headline','Under 100 words. Direct. Reactive.'],['Desk Commentary','100–150 words. One paragraph only.'],['GIS View','200–400 words.'],['Specialist Spotlight','Under 200 words.'],['Event Response','40–60 words per update.'],['Top Market Takeaways','600–900 words. Essay, not list.'],['Ideas & Insights','1,200–2,000 words. Always 2 charts.'],['Macro & Markets','3,000 words. Essay quality.'],['Op-Ed (DMU section)','500 words max.']].map(([name, target], i) => (
+                <div key={i} style={{ display:'flex', justifyContent:'space-between', padding:'8px 0', borderBottom:'1px solid '+c.pearl, fontSize:12 }}>
+                  <span style={{ fontWeight:700, color:c.navy }}>{name}</span>
+                  <span style={{ color:c.slate }}>{target}</span>
                 </div>
-                {isOpen && (
-                  <div style={{ padding:'12px 18px', borderTop:'1px solid '+c.pearl, fontSize:12, lineHeight:1.7, color:c.slate, whiteSpace:'pre-wrap' }}>{item.detail}</div>
-                )}
+              ))}
+            </StyleSection>
+
+            <StyleSection title="Titles">
+              <p>A good title does one of three things: creates tension, reframes the question, or states a non-consensus view.</p>
+              {[['Two Engines. One Is Stalling.','Creates tension'],["It's Not Inflation. It's the Confidence Gap.",'Reframes the question'],['The Market Is Wrong About China.','States non-consensus view']].map(([title, label], i) => (
+                <div key={i} style={{ display:'flex', gap:12, marginBottom:8, alignItems:'center' }}>
+                  <span style={{ fontSize:11, padding:'3px 8px', borderRadius:4, background:c.ivory, color:c.gold, fontWeight:600, flexShrink:0 }}>{label}</span>
+                  <span style={{ fontSize:12, fontStyle:'italic', color:c.navy }}>"{title}"</span>
+                </div>
+              ))}
+              <p>A bad title describes the topic: "China Equities Update", "Q2 Outlook", "Our Thoughts on the Fed". Rule: if the title could appear on any large bank's research portal without embarrassment, it is too generic.</p>
+            </StyleSection>
+
+            <StyleSection title="Section Headings">
+              <p>Headings in longer pieces should be narrative, not functional.</p>
+              <p style={{ background:'#F0FDF4', padding:'10px 14px', borderRadius:6, fontSize:12 }}>✓ "When the Map No Longer Matches the Territory"<br/>✓ "The Fed's Dilemma Has No Clean Solution"<br/>✓ "What Advisors Are Missing in the China Recovery Story"</p>
+              <p style={{ background:'#FFF1F1', padding:'10px 14px', borderRadius:6, fontSize:12 }}>✗ "Background"&nbsp;&nbsp;✗ "Analysis"&nbsp;&nbsp;✗ "Section 2: Equities"</p>
+              <p>Each heading should work as a standalone sentence that advances the argument.</p>
+            </StyleSection>
+
+            <StyleSection title="Language Rules">
+              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16, marginBottom:12 }}>
+                <div>
+                  <div style={{ fontSize:10, fontWeight:700, color:c.pos, textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:8 }}>Always Use</div>
+                  {['"We believe / We expect / Our view is..."','"Advisors" (not RMs)','"Clients" (not customers)','"Portfolios" (not books)','"Overweight / underweight"','Source + year for all data'].map((s,i) => <div key={i} style={{ fontSize:11, marginBottom:4, color:c.navy }}>✓ {s}</div>)}
+                </div>
+                <div>
+                  <div style={{ fontSize:10, fontWeight:700, color:c.neg, textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:8 }}>Never Use</div>
+                  {['"We feel" or "we think"','Marketing language ("exciting")','"Our house view" (jargon)','Exclamation marks','Excessively hedged language','"Customers" or "books"'].map((s,i) => <div key={i} style={{ fontSize:11, marginBottom:4, color:c.slate }}>✗ {s}</div>)}
+                </div>
               </div>
-            );
-          })}
+              <p><strong>Numbers:</strong> Write out one through nine. Numerals for 10+. Always % not "percent". Use bp not "bps". Dates: "Q2 2026" not "2Q26".</p>
+            </StyleSection>
+
+            <StyleSection title="Certainty Calibration">
+              {[['High conviction','We expect... We believe... Our view is...'],['Moderate','On balance... The weight of evidence suggests...'],['Low / risk flag','Were X to occur... One scenario is...'],['Never use','It is certain that... Guaranteed... Without doubt...']].map(([level, example], i) => (
+                <div key={i} style={{ display:'flex', gap:12, marginBottom:10, alignItems:'flex-start' }}>
+                  <span style={{ fontSize:10, fontWeight:700, padding:'3px 8px', borderRadius:4, background:i===3?'#FFF1F1':c.ivory, color:i===3?c.neg:c.gold, flexShrink:0, width:100, textAlign:'center' }}>{level}</span>
+                  <span style={{ fontSize:12, color:c.slate, fontStyle:'italic' }}>"{example}"</span>
+                </div>
+              ))}
+            </StyleSection>
+
+            <StyleSection title="The Differentiation Test">
+              <p>"What the Market Is Missing" is the most important section in any Ideas & Insights or TMT piece. The animating question behind every Macro & Markets.</p>
+              <p>Test: could this piece have been written verbatim by any other large bank's research team? If yes — sharpen the view.</p>
+              <p>The non-consensus view should be: <strong>specific</strong> (not "we see risks" but "we see X% downside from Y"), <strong>falsifiable</strong> (there should be a clear signal that would change the view), <strong>grounded in data</strong> (not opinion for its own sake), and <strong>calm in register</strong> (conviction without aggression).</p>
+            </StyleSection>
+
+            <StyleSection title="Disclaimer (all external content)" last={true}>
+              <p style={{ fontSize:11, color:c.slate, fontStyle:'italic', fontFamily:'Arial, sans-serif' }}>This material is for informational purposes only and does not constitute investment advice. Past performance is not indicative of future results. Investments in financial instruments carry risk. Products and services described are offered by private banking businesses, part of JPMorgan Chase & Co. Not all products and services are available in all geographic areas. Eligibility for particular products and services is subject to final determination by J.P. Morgan.</p>
+              <p style={{ fontSize:10, color:c.slate }}>Pre-translated versions available in: Spanish, Portuguese, German, Italian, French via the Translations tab.</p>
+            </StyleSection>
+
+          </div>
         </div>
       )}
 
@@ -7536,6 +7652,7 @@ ${sectionsText}`;
     { id: 'macroMarkets', name: 'Macro & Markets', icon: '🌍', color: c.navy, nexus: true },
     { id: 'eventResponse', name: 'Event Response', icon: '⚡', color: '#B84242', nexus: true },
     { id: 'videoPublish', name: 'Video Publish', icon: '🎬', color: c.neg, nexus: true },
+    { id: 'playground', name: 'The Playground', icon: '🎯', color: '#6B5B95', nexus: false, internal: true },
   ];
 
   const solutionsTemplates = [
@@ -8447,9 +8564,9 @@ ${sectionsText}`;
                           style={{ width: '100%', padding: 8, borderRadius: 6, border: '1px solid ' + c.pearl, fontSize: 12, background: '#fff' }}
                         >
                           <option>Global</option>
+                          <option>APAC</option>
                           <option>EMEA</option>
-                          <option>Asia</option>
-                          <option>Latin America</option>
+                          <option>LATAM</option>
                           <option>US</option>
                         </select>
                       </div>
