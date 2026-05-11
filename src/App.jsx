@@ -151,6 +151,24 @@ const Tag = ({ name, sentiment }) => {
   );
 };
 
+
+class ErrorBoundary extends React.Component {
+  constructor(props) { super(props); this.state = { error: null }; }
+  static getDerivedStateFromError(error) { return { error: error.message }; }
+  componentDidCatch(error, info) { console.error('Render error:', error, info); }
+  render() {
+    if (this.state.error) {
+      return <div style={{ padding: 24, background: '#FFF1F1', border: '1px solid #FECACA', borderRadius: 8, margin: 16, fontFamily: 'monospace', fontSize: 12 }}>
+        <div style={{ fontWeight: 700, color: '#DC2626', marginBottom: 8 }}>Render Error (click F12 → Console for details)</div>
+        <div style={{ color: '#374151' }}>{this.state.error}</div>
+        <button onClick={() => this.setState({ error: null })} style={{ marginTop: 8, padding: '4px 10px', borderRadius: 4, border: '1px solid #FECACA', background: '#fff', cursor: 'pointer' }}>Dismiss</button>
+      </div>;
+    }
+    return this.props.children;
+  }
+}
+
+
 const SectionLabel = ({ children, guidance }) => (
   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5 }}>
     <label style={{ fontSize: 9, textTransform: 'uppercase', letterSpacing: 0.5, color: c.gold, fontWeight: 600 }}>{children}</label>
@@ -1589,7 +1607,7 @@ const VisualChartContent = ({ c_content, templateName }) => {
         </div>
       )}
 
-      {chartData && (
+      {chartData && Array.isArray(chartData.data) && chartData.data.length > 0 && (
         <div>
           <div style={{ background: '#fff', border: '1px solid #E5E7EB', borderRadius: 12, padding: 24, marginBottom: 16 }}>
             <div style={{ marginBottom: 16 }}>
@@ -1609,7 +1627,7 @@ const VisualChartContent = ({ c_content, templateName }) => {
                     {d.value2 && (
                       <div style={{ width: '40%', background: '#C1A364', borderRadius: '3px 3px 0 0', height: `${pct2}%`, minHeight: 2, transition: 'height 0.6s ease' }} />
                     )}
-                    <div style={{ width: d.value2 ? '40%' : '70%', background: chartType === 'area' ? 'rgba(10,26,47,0.7)' : '#0A1A2F', borderRadius: '3px 3px 0 0', height: `${pct}%`, minHeight: 2, transition: 'height 0.6s ease', position: 'relative' }}>
+                    <div style={{ width: d.value2 ? '40%' : '70%', background: (chartData?.type === 'area') ? 'rgba(10,26,47,0.7)' : '#0A1A2F', borderRadius: '3px 3px 0 0', height: `${pct}%`, minHeight: 2, transition: 'height 0.6s ease', position: 'relative' }}>
                       <div style={{ position: 'absolute', top: -18, left: '50%', transform: 'translateX(-50%)', fontSize: 9, fontWeight: 700, color: '#0A1A2F', whiteSpace: 'nowrap' }}>{d.value}</div>
                     </div>
                     <div style={{ fontSize: 9, color: '#6B7280', textAlign: 'center', marginTop: 4, transform: 'rotate(-25deg)', transformOrigin: 'top center', whiteSpace: 'nowrap', overflow: 'hidden', maxWidth: 60, textOverflow: 'ellipsis' }}>{d.label}</div>
@@ -6626,8 +6644,9 @@ const CodebaseViewer = () => {
 const ContentCircle = ({ currentContent, libraryItems, onOpen }) => {
   if (!currentContent || !libraryItems) return null;
 
+  try {
   // Find related by tags, keywords in title/tagline
-  const currentTags = currentContent.tags || [];
+  const currentTags = Array.isArray(currentContent.tags) ? currentContent.tags : [];
   const currentTitle = (currentContent.title || '').toLowerCase();
   const currentWords = currentTitle.split(/\s+/).filter(w => w.length > 4);
 
@@ -6677,6 +6696,7 @@ const ContentCircle = ({ currentContent, libraryItems, onOpen }) => {
       </div>
     </div>
   );
+  } catch(e) { return null; }
 };
 
 // ── FORWARD LOOK TAB ─────────────────────────────────────────────────────────
@@ -6703,12 +6723,16 @@ const ForwardLookTab = () => {
   const [view, setView] = React.useState('calendar');
   const [search, setSearch] = React.useState('');
   const [showExposure, setShowExposure] = React.useState(null);
+  const [typeFilter, setTypeFilter] = React.useState(null);
+  const [keyOnly, setKeyOnly] = React.useState(false);
+  const [regionFilter, setRegionFilter] = React.useState(null);
   const [loading, setLoading] = React.useState(false);
   const [beatMiss, setBeatMiss] = React.useState({});
   const today = new Date();
 
-  const upcoming = FORWARD_EVENTS_2026.filter(e => new Date(e.date) >= today && e.title.toLowerCase().includes(search.toLowerCase()));
-  const past = FORWARD_EVENTS_2026.filter(e => new Date(e.date) < today && e.title.toLowerCase().includes(search.toLowerCase()));
+  const filterEvents = (events) => events.filter(e => e.title.toLowerCase().includes(search.toLowerCase())).filter(e => !typeFilter || e.type === typeFilter).filter(e => !keyOnly || e.isKey).filter(e => !regionFilter || e.region === regionFilter || e.region === 'Global');
+  const upcoming = filterEvents(FORWARD_EVENTS_2026.filter(e => new Date(e.date) >= today));
+  const past = filterEvents(FORWARD_EVENTS_2026.filter(e => new Date(e.date) < today));
 
   const typeColor = { macro:'#0A1A2F', earnings:'#059669', 'central-bank':'#C1A364', geopolitical:'#DC2626' };
   const typeLabel = { macro:'Macro', earnings:'Earnings', 'central-bank':'Central Bank', geopolitical:'Geopolitical' };
@@ -6842,8 +6866,30 @@ const ForwardLookTab = () => {
           ))}
         </div>
       </div>
-      <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search events..."
-        style={{ width:'100%', padding:'9px 14px', borderRadius:7, border:'1px solid '+c.pearl, fontSize:13, outline:'none', marginBottom:16, boxSizing:'border-box' }} />
+      {/* Filters */}
+      <div style={{ display:'flex', gap:8, marginBottom:12, flexWrap:'wrap' }}>
+        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search events..."
+          style={{ flex:1, minWidth:180, padding:'7px 12px', borderRadius:6, border:'1px solid '+c.pearl, fontSize:12, outline:'none' }} />
+        {['macro','earnings','central-bank','geopolitical'].map(t => (
+          <button key={t} onClick={() => setTypeFilter(f => f===t?null:t)}
+            style={{ padding:'6px 12px', borderRadius:6, border:'1px solid '+(typeFilter===t ? typeColor[t] : c.pearl), background: typeFilter===t ? typeColor[t]+'18' : '#fff', color: typeFilter===t ? typeColor[t] : c.slate, fontSize:11, fontWeight:typeFilter===t?700:400, cursor:'pointer' }}>
+            {typeLabel[t]}
+          </button>
+        ))}
+        <button onClick={() => setKeyOnly(k => !k)}
+          style={{ padding:'6px 12px', borderRadius:6, border:'1px solid '+(keyOnly?c.gold:c.pearl), background:keyOnly?'#FFF9E6':'#fff', color:keyOnly?c.gold:c.slate, fontSize:11, fontWeight:keyOnly?700:400, cursor:'pointer' }}>
+          ★ Key Events Only
+        </button>
+        <button onClick={() => setRegionFilter(r => r==='US'?null:'US')}
+          style={{ padding:'6px 12px', borderRadius:6, border:'1px solid '+(regionFilter==='US'?c.teal:c.pearl), background:regionFilter==='US'?'#F0F9FF':'#fff', color:regionFilter==='US'?c.teal:c.slate, fontSize:11, cursor:'pointer' }}>
+          🇺🇸 US
+        </button>
+        <button onClick={() => setRegionFilter(r => r==='EU'?null:'EU')}
+          style={{ padding:'6px 12px', borderRadius:6, border:'1px solid '+(regionFilter==='EU'?c.teal:c.pearl), background:regionFilter==='EU'?'#F0F9FF':'#fff', color:regionFilter==='EU'?c.teal:c.slate, fontSize:11, cursor:'pointer' }}>
+          🇪🇺 Europe
+        </button>
+        {(typeFilter||keyOnly||regionFilter) && <button onClick={() => {setTypeFilter(null);setKeyOnly(false);setRegionFilter(null);}} style={{ padding:'6px 10px', borderRadius:6, border:'1px solid '+c.pearl, background:'#fff', color:c.slate, fontSize:11, cursor:'pointer' }}>✕ Clear</button>}
+      </div>
       {view === 'calendar' ? (
         upcoming.length === 0 ? <div style={{ textAlign:'center', color:c.slate, padding:40 }}>No upcoming events found</div> :
         upcoming.map((e, i) => <EventCard key={i} event={e} isPast={false} />)
@@ -8794,7 +8840,7 @@ ${sourceText}` }]
     {/* Excel Connector Modal */}
     <ExcelConnectorModal isOpen={showExcelModal} onClose={() => setShowExcelModal(false)} onInsert={handleExcelInsert} />
     {clientExposureTicker && <ClientExposurePanel ticker={clientExposureTicker} onClose={() => setClientExposureTicker(null)} />}
-    {(activeTab === 'editor' || activeTab === 'content') && libraryItems.filter(i => i.status==='published').length > 0 && <ContentCircle currentContent={{ ...templateContents[activeTemplate], title: templateContents[activeTemplate]?.title || '' }} libraryItems={libraryItems} onOpen={(item) => { setActiveTab('editor'); }} />}
+    {activeTab === 'editor' && templateContents[activeTemplate] && libraryItems.filter(i => i.status==='published').length > 0 && (() => { try { return <ContentCircle currentContent={templateContents[activeTemplate]} libraryItems={libraryItems} onOpen={() => {}} />; } catch(e) { return null; } })()}
 
     <AIDraftingPanel
       isOpen={showAIDrafting}
