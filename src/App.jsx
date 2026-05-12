@@ -1578,46 +1578,47 @@ const VisualChartContent = ({ c_content, templateName }) => {
   const maxVal = chartData && chartData.data && chartData.data.length > 0 ? Math.max(...chartData.data.map(d => Math.max(d.value||0, d.value2||0)), 1) : 1;
 
   return (
-    <div style={{ fontFamily: 'Arial, sans-serif', width: '100%', padding: '24px 32px', boxSizing: 'border-box' }}>
-      <div style={{ marginBottom: 20, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+    <div style={{ fontFamily: 'Georgia, serif', width: '100%', minHeight: '100%', background: '#0A1A2F', color: '#fff', boxSizing: 'border-box' }}>
+      {/* Header bar */}
+      <div style={{ padding: '20px 40px', borderBottom: '1px solid rgba(193,163,100,0.3)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
-          <div style={{ fontSize: 12, fontWeight: 700, color: '#C1A364', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 4 }}>Visual Story</div>
-          <div style={{ fontSize: 16, fontWeight: 700, color: '#0A1A2F' }}>{c_content.title || 'Untitled'}</div>
+          <div style={{ fontSize: 9, fontWeight: 700, color: '#C1A364', textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: 6 }}>J.P. Morgan Private Bank · Visual Story</div>
+          <div style={{ fontSize: 22, fontWeight: 400, color: '#fff', lineHeight: 1.3 }}>{c_content.title || 'Untitled'}</div>
         </div>
         <button onClick={generateChart} disabled={loading}
-          style={{ padding: '8px 20px', borderRadius: 6, border: 'none', background: loading ? '#E5E7EB' : '#0A1A2F', color: loading ? '#6B7280' : '#fff', fontSize: 12, cursor: loading ? 'wait' : 'pointer', fontWeight: 700 }}>
-          {loading ? '⏳ Generating...' : chartData ? '↻ Regenerate Chart' : '✨ Generate Visual Chart'}
+          style={{ padding: '10px 22px', borderRadius: 6, border: '1px solid #C1A364', background: loading ? 'transparent' : '#C1A364', color: loading ? '#C1A364' : '#0A1A2F', fontSize: 12, cursor: loading ? 'wait' : 'pointer', fontWeight: 700, letterSpacing: '0.04em' }}>
+          {loading ? '⏳ Generating...' : chartData ? '↻ Regenerate' : '✨ Generate Visual Story'}
         </button>
       </div>
 
       {error && <div style={{ background: '#FFF1F1', border: '1px solid #FECACA', borderRadius: 8, padding: 12, color: '#DC2626', fontSize: 12, marginBottom: 16 }}>{error}</div>}
 
       {!chartData && !loading && (
-        <div style={{ border: '2px dashed #E5E7EB', borderRadius: 12, padding: 60, textAlign: 'center', background: '#F9FAFB' }}>
+        <div style={{ border: '2px dashed rgba(193,163,100,0.3)', borderRadius: 12, padding: 80, textAlign: 'center', margin: '40px', background: 'rgba(255,255,255,0.03)' }}>
           <div style={{ fontSize: 32, marginBottom: 12 }}>📊</div>
-          <div style={{ fontSize: 14, color: '#6B7280', marginBottom: 8 }}>Click "Generate Chart" to create an interactive visual from your content</div>
-          <div style={{ fontSize: 11, color: '#9CA3AF' }}>The AI will extract the key data story and visualise it</div>
+          <div style={{ fontSize: 16, color: 'rgba(255,255,255,0.7)', marginBottom: 8, fontFamily: 'Georgia, serif' }}>Generate a visual story from your written content</div>
+          <div style={{ fontSize: 12, color: 'rgba(193,163,100,0.6)' }}>The AI extracts the key data story and builds an interactive visual</div>
         </div>
       )}
 
       {loading && (
-        <div style={{ border: '2px dashed #DDD6FE', borderRadius: 12, padding: 60, textAlign: 'center', background: '#F5F3FF' }}>
+        <div style={{ border: '2px dashed rgba(193,163,100,0.3)', borderRadius: 12, padding: 80, textAlign: 'center', margin: '40px', background: 'rgba(255,255,255,0.03)' }}>
           <div style={{ fontSize: 32, marginBottom: 12 }}>⏳</div>
-          <div style={{ fontSize: 14, color: '#6B5B95' }}>Reading your content and building the chart...</div>
+          <div style={{ fontSize: 16, color: 'rgba(255,255,255,0.7)', fontFamily: 'Georgia, serif' }}>Reading your content and building the visual story...</div>
         </div>
       )}
 
       {chartData && Array.isArray(chartData.data) && chartData.data.length > 0 && (
         <div>
-          <div style={{ background: '#fff', border: '1px solid #E5E7EB', borderRadius: 12, padding: 24, marginBottom: 16 }}>
+          <div style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(193,163,100,0.3)', borderRadius: 12, padding: '32px 40px', margin: '32px 40px' }}>
             <div style={{ marginBottom: 16 }}>
-              <div style={{ fontSize: 16, fontWeight: 700, color: '#0A1A2F', marginBottom: 4 }}>{chartData.title}</div>
-              <div style={{ fontSize: 12, color: '#6B7280' }}>{chartData.subtitle}</div>
+              <div style={{ fontSize: 20, fontWeight: 400, color: '#fff', marginBottom: 6, fontFamily: 'Georgia, serif' }}>{chartData.title}</div>
+              <div style={{ fontSize: 12, color: '#C1A364', letterSpacing: '0.05em' }}>{chartData.subtitle}</div>
             </div>
             {/* Y-axis label */}
-            <div style={{ fontSize: 10, color: '#9CA3AF', marginBottom: 8 }}>{chartData.yLabel}</div>
+            <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{chartData.yLabel}</div>
             {/* Chart area */}
-            <div style={{ height: 320, display: 'flex', alignItems: 'flex-end', gap: 6, padding: '20px 4px 0', borderBottom: '2px solid #E5E7EB', borderLeft: '2px solid #E5E7EB', position: 'relative', background: '#FAFAFA', borderRadius: '8px 8px 0 0' }}>
+            <div style={{ height: 320, display: 'flex', alignItems: 'flex-end', gap: 6, padding: '20px 4px 0', borderBottom: '2px solid rgba(193,163,100,0.4)', borderLeft: '2px solid rgba(193,163,100,0.4)', position: 'relative', background: 'rgba(255,255,255,0.03)', borderRadius: '8px 8px 0 0' }}>
               {(chartData.data || []).map((d, i) => {
                 const pct = maxVal > 0 ? (d.value / maxVal) * 100 : 0;
                 const pct2 = d.value2 && maxVal > 0 ? (d.value2 / maxVal) * 100 : 0;
@@ -1625,37 +1626,37 @@ const VisualChartContent = ({ c_content, templateName }) => {
                   <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', height: '100%', justifyContent: 'flex-end', gap: 2, position: 'relative' }}
                     title={`${d.label}: ${d.value}${d.value2 ? ' / ' + d.value2 : ''}`}>
                     {d.value2 && (
-                      <div style={{ width: '40%', background: '#C1A364', borderRadius: '3px 3px 0 0', height: `${pct2}%`, minHeight: 2, transition: 'height 0.6s ease' }} />
+                      <div style={{ width: '40%', background: 'rgba(255,255,255,0.3)', borderRadius: '3px 3px 0 0', height: `${pct2}%`, minHeight: 2, transition: 'height 0.6s ease' }} />
                     )}
-                    <div style={{ width: d.value2 ? '40%' : '70%', background: (chartData?.type === 'area') ? 'rgba(10,26,47,0.7)' : '#0A1A2F', borderRadius: '3px 3px 0 0', height: `${pct}%`, minHeight: 2, transition: 'height 0.6s ease', position: 'relative' }}>
-                      <div style={{ position: 'absolute', top: -18, left: '50%', transform: 'translateX(-50%)', fontSize: 9, fontWeight: 700, color: '#0A1A2F', whiteSpace: 'nowrap' }}>{d.value}</div>
+                    <div style={{ width: d.value2 ? '40%' : '70%', background: (chartData?.type === 'area') ? 'rgba(193,163,100,0.7)' : '#C1A364', borderRadius: '3px 3px 0 0', height: `${pct}%`, minHeight: 2, transition: 'height 0.6s ease', position: 'relative' }}>
+                      <div style={{ position: 'absolute', top: -18, left: '50%', transform: 'translateX(-50%)', fontSize: 9, fontWeight: 700, color: '#fff', whiteSpace: 'nowrap' }}>{d.value}</div>
                     </div>
-                    <div style={{ fontSize: 9, color: '#6B7280', textAlign: 'center', marginTop: 4, transform: 'rotate(-25deg)', transformOrigin: 'top center', whiteSpace: 'nowrap', overflow: 'hidden', maxWidth: 60, textOverflow: 'ellipsis' }}>{d.label}</div>
+                    <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.6)', textAlign: 'center', marginTop: 4, transform: 'rotate(-25deg)', transformOrigin: 'top center', whiteSpace: 'nowrap', overflow: 'hidden', maxWidth: 60, textOverflow: 'ellipsis' }}>{d.label}</div>
                   </div>
                 );
               })}
             </div>
-            <div style={{ fontSize: 10, color: '#9CA3AF', marginTop: 4, textAlign: 'center' }}>{chartData.xLabel}</div>
+            <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', marginTop: 8, textAlign: 'center', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{chartData.xLabel}</div>
             {/* Insight callout */}
             {chartData.insight && (
-              <div style={{ marginTop: 16, padding: '10px 14px', background: '#F0F9FF', borderLeft: '3px solid #0A1A2F', borderRadius: '0 6px 6px 0', fontSize: 12, color: '#0A1A2F', fontStyle: 'italic' }}>
+              <div style={{ marginTop: 16, padding: '10px 14px', background: 'rgba(193,163,100,0.1)', borderLeft: '3px solid #C1A364', borderRadius: '0 6px 6px 0', fontSize: 13, color: '#fff', fontStyle: 'italic' }}>
                 💡 {chartData.insight}
               </div>
             )}
           </div>
           {/* Download/embed buttons */}
-          <div style={{ display: 'flex', gap: 8 }}>
+          <div style={{ display: 'flex', gap: 8, margin: '0 40px 40px' }}>
             <button onClick={() => {
               const svg = document.querySelector('[data-chart-area]');
               if (svg) { /* download logic */ }
               alert('Chart download — connect to your export library (e.g. html2canvas or svg export)');
-            }} style={{ padding: '8px 16px', borderRadius: 6, border: '1px solid #E5E7EB', background: '#fff', color: '#374151', fontSize: 11, cursor: 'pointer', fontWeight: 600 }}>
+            }} style={{ padding: '8px 16px', borderRadius: 6, border: '1px solid rgba(193,163,100,0.5)', background: 'transparent', color: '#C1A364', fontSize: 11, cursor: 'pointer', fontWeight: 600 }}>
               ⬇ Download PNG
             </button>
             <button onClick={() => {
               const embedCode = `<iframe src="${window.location.origin}/embed/chart?id=${Date.now()}" width="700" height="400" frameborder="0"></iframe>`;
               navigator.clipboard?.writeText(embedCode).then(() => alert('Embed code copied to clipboard'));
-            }} style={{ padding: '8px 16px', borderRadius: 6, border: '1px solid #E5E7EB', background: '#fff', color: '#374151', fontSize: 11, cursor: 'pointer', fontWeight: 600 }}>
+            }} style={{ padding: '8px 16px', borderRadius: 6, border: '1px solid rgba(193,163,100,0.5)', background: 'transparent', color: '#C1A364', fontSize: 11, cursor: 'pointer', fontWeight: 600 }}>
               {'</>'} Copy Embed Code
             </button>
           </div>
@@ -2655,113 +2656,71 @@ const OutputPreviewPanel = ({ isOpen, onClose, templateName, templateId, content
           <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#666', fontSize: 24, cursor: 'pointer', padding: 4 }}>×</button>
         </div>
 
-        {/* Preview Area */}
-        <div style={{ flex: 1, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: 24, overflow: 'auto', background: '#1a1a1a' }}>
-          <div style={{ 
-            width: deviceWidth,
-            maxWidth: '100%',
-            minHeight: device === 'mobile' ? 700 : 'auto',
-            background: '#fff', 
-            borderRadius: device === 'mobile' ? 32 : 8,
-            overflow: 'hidden',
-            boxShadow: '0 25px 80px rgba(0,0,0,0.5)',
-            border: device === 'mobile' ? '8px solid #333' : 'none'
-          }}>
-            {/* Browser Chrome */}
-            {device !== 'mobile' && (
-              <div style={{ padding: '10px 14px', background: '#f0f0f0', display: 'flex', alignItems: 'center', gap: 10, borderBottom: '1px solid #ddd' }}>
-                <div style={{ display: 'flex', gap: 6 }}>
-                  <div style={{ width: 12, height: 12, borderRadius: '50%', background: '#ff5f57' }} />
-                  <div style={{ width: 12, height: 12, borderRadius: '50%', background: '#ffbd2e' }} />
-                  <div style={{ width: 12, height: 12, borderRadius: '50%', background: '#28c840' }} />
-                </div>
-                <div style={{ flex: 1, padding: '6px 14px', background: '#fff', borderRadius: 6, fontSize: 11, color: '#666', border: '1px solid #ddd' }}>
-                  {format === 'email' ? 'mail.google.com' : 'privatebank.jpmorgan.com/eur/en/insights/markets-and-investing/tmt/' + (c_content.title || 'article').toLowerCase().replace(/\s+/g, '-').substring(0, 40)}
-                </div>
-              </div>
-            )}
-            
-            {/* Mobile Status Bar */}
-            {device === 'mobile' && (
-              <div style={{ padding: '12px 20px', background: '#000', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ color: '#fff', fontSize: 12, fontWeight: 500 }}>9:41</span>
-                <div style={{ width: 80, height: 28, borderRadius: 14, background: '#1a1a1a' }} />
-                <div style={{ display: 'flex', gap: 4 }}>
-                  <span style={{ color: '#fff', fontSize: 11 }}>5G</span>
-                  <span style={{ color: '#fff', fontSize: 11 }}>100%</span>
-                </div>
-              </div>
-            )}
-
-            {/* Content */}
+        {/* Preview Area — WhatsApp/Chart bypass the device chrome wrapper */}
+        {device === 'whatsapp' ? (
+          <div style={{ flex: 1, overflow: 'auto', background: '#111', display: 'flex', justifyContent: 'center' }}>
+            <WhatsAppPreviewContent c_content={c_content} templateName={templateName} />
+          </div>
+        ) : device === 'chart' ? (
+          <div style={{ flex: 1, overflow: 'auto', background: '#1a1a1a', display: 'flex', flexDirection: 'column' }}>
+            <VisualChartContent c_content={c_content} templateName={templateName} />
+          </div>
+        ) : (
+          <div style={{ flex: 1, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: 24, overflow: 'auto', background: '#1a1a1a' }}>
             <div style={{ 
-              padding: isMobile ? 24 : format === 'email' ? 40 : 56,
-              maxWidth: format === 'pdf' ? 680 : 'none',
-              margin: format === 'pdf' ? '0 auto' : 0
+              width: deviceWidth, maxWidth: '100%',
+              minHeight: device === 'mobile' ? 700 : 'auto',
+              background: '#fff', 
+              borderRadius: device === 'mobile' ? 32 : 8,
+              overflow: 'hidden',
+              boxShadow: '0 25px 80px rgba(0,0,0,0.5)',
+              border: device === 'mobile' ? '8px solid #333' : 'none'
             }}>
-              {device === 'chart'
-                ? <VisualChartContent c_content={c_content} templateName={templateName} />
-                : device === 'whatsapp'
-                ? <WhatsAppPreviewContent c_content={c_content} templateName={templateName} />
-                : device === 'email'
-                ? <EmailPreviewContent c_content={c_content} templateName={templateName} metadata={m} />
-                : device === 'pdf'
-                ? <ArticleContent isMobile={false} isEmail={false} isPDF={true} />
-                : templateId === 'videoPublish'
-                ? <VideoArticleContent isMobile={isMobile} />
-                : templateId === 'eventResponse'
-                ? <EventResponseContent isMobile={isMobile} />
-                : templateId === 'macroMarkets'
-                ? <MacroMarketsContent isMobile={isMobile} />
-                : templateId === 'morningMeeting'
-                ? <MorningMeetingContent isMobile={isMobile} />
-                : templateId === 'dailyMarketUpdate'
-                ? <DailyMarketUpdateContent isMobile={isMobile} c_content={c_content} formatText={formatText} JPMDisclaimer={JPMDisclaimer} />
-                : <ArticleContent isMobile={isMobile} isEmail={format === 'email'} isPDF={format === 'pdf'} />
-              }
+              {/* Browser chrome — desktop/tablet/email/pdf only */}
+              {device !== 'mobile' && (
+                <div style={{ padding: '10px 14px', background: '#f0f0f0', display: 'flex', alignItems: 'center', gap: 10, borderBottom: '1px solid #ddd' }}>
+                  <div style={{ display: 'flex', gap: 6 }}>
+                    <div style={{ width: 12, height: 12, borderRadius: '50%', background: '#ff5f57' }} />
+                    <div style={{ width: 12, height: 12, borderRadius: '50%', background: '#ffbd2e' }} />
+                    <div style={{ width: 12, height: 12, borderRadius: '50%', background: '#28c840' }} />
+                  </div>
+                  <div style={{ flex: 1, padding: '6px 14px', background: '#fff', borderRadius: 6, fontSize: 11, color: '#666', border: '1px solid #ddd' }}>
+                    privatebank.jpmorgan.com/eur/en/insights/{(c_content.title || 'article').toLowerCase().replace(/[^a-z0-9]+/g, '-').substring(0, 50)}
+                  </div>
+                </div>
+              )}
+              {device === 'mobile' && (
+                <div style={{ padding: '12px 20px', background: '#000', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ color: '#fff', fontSize: 12, fontWeight: 500 }}>9:41</span>
+                  <div style={{ width: 80, height: 28, borderRadius: 14, background: '#1a1a1a' }} />
+                  <div style={{ display: 'flex', gap: 4 }}>
+                    <span style={{ color: '#fff', fontSize: 11 }}>5G</span>
+                    <span style={{ color: '#fff', fontSize: 11 }}>100%</span>
+                  </div>
+                </div>
+              )}
+              {/* Content */}
+              <div style={{ padding: isMobile ? 24 : 56, maxWidth: format === 'pdf' ? 680 : 'none', margin: format === 'pdf' ? '0 auto' : 0 }}>
+                {device === 'email'
+                  ? <EmailPreviewContent c_content={c_content} templateName={templateName} metadata={m} />
+                  : device === 'pdf'
+                  ? <ArticleContent isMobile={false} isEmail={false} isPDF={true} />
+                  : templateId === 'videoPublish'
+                  ? <VideoArticleContent isMobile={isMobile} />
+                  : templateId === 'eventResponse'
+                  ? <EventResponseContent isMobile={isMobile} />
+                  : templateId === 'macroMarkets'
+                  ? <MacroMarketsContent isMobile={isMobile} />
+                  : templateId === 'morningMeeting'
+                  ? <MorningMeetingContent isMobile={isMobile} />
+                  : templateId === 'dailyMarketUpdate'
+                  ? <DailyMarketUpdateContent isMobile={isMobile} c_content={c_content} formatText={formatText} JPMDisclaimer={JPMDisclaimer} />
+                  : <ArticleContent isMobile={isMobile} isEmail={false} isPDF={false} />
+                }
+              </div>
             </div>
           </div>
-        </div>
-
-        {/* Footer Actions */}
-        <div style={{ padding: '14px 20px', background: '#2a2a2a', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #333' }}>
-          <div style={{ display: 'flex', gap: 10 }}>
-            <button style={{ 
-              display: 'flex', alignItems: 'center', gap: 6,
-              padding: '10px 18px', borderRadius: 6, 
-              border: '1px solid #444', background: 'transparent', 
-              color: '#fff', fontSize: 12, cursor: 'pointer' 
-            }}>
-              <span>📧</span> Send Test Email
-            </button>
-            <button style={{ 
-              display: 'flex', alignItems: 'center', gap: 6,
-              padding: '10px 18px', borderRadius: 6, 
-              border: '1px solid #444', background: 'transparent', 
-              color: '#fff', fontSize: 12, cursor: 'pointer' 
-            }}>
-              <span>📄</span> Export PDF
-            </button>
-            <button style={{ 
-              display: 'flex', alignItems: 'center', gap: 6,
-              padding: '10px 18px', borderRadius: 6, 
-              border: '1px solid #444', background: 'transparent', 
-              color: '#fff', fontSize: 12, cursor: 'pointer' 
-            }}>
-              <span>🔗</span> Copy Link
-            </button>
-          </div>
-          <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-            <span style={{ fontSize: 11, color: '#666' }}>Ready to publish</span>
-            <button style={{ 
-              padding: '10px 24px', borderRadius: 6, 
-              border: 'none', background: c.pos, 
-              color: '#fff', fontSize: 12, fontWeight: 600, cursor: 'pointer' 
-            }}>
-              Publish Now
-            </button>
-          </div>
-        </div>
+        )}
       </div>
     </div>
   );
@@ -6771,6 +6730,7 @@ const CodebaseViewer = () => {
 
 // ── CONTENT CIRCLE — Related content sidebar ─────────────────────────────────
 const ContentCircle = ({ currentContent, libraryItems, onOpen }) => {
+  const [hidden, setHidden] = React.useState(false);
   if (!currentContent || !libraryItems) return null;
 
   try {
@@ -6828,7 +6788,12 @@ const ContentCircle = ({ currentContent, libraryItems, onOpen }) => {
 
   return (
     <div style={{ position:'fixed', left:0, top:'50%', transform:'translateY(-50%)', zIndex:500 }}>
-      <div style={{ background:'#fff', boxShadow:'2px 0 12px rgba(0,0,0,0.1)', borderRadius:'0 10px 10px 0', padding:'12px 14px', width:220, borderLeft:'3px solid '+c.gold }}>
+      {/* Toggle tab — always visible */}
+      <div onClick={() => setHidden(h => !h)}
+        style={{ position:'absolute', right: hidden ? -32 : -24, top:'50%', transform:'translateY(-50%)', background:c.gold, color:'#fff', borderRadius:'0 6px 6px 0', padding:'8px 6px', cursor:'pointer', fontSize:10, fontWeight:700, writingMode:'vertical-rl', letterSpacing:'0.08em', userSelect:'none', boxShadow:'2px 0 8px rgba(0,0,0,0.15)' }}>
+        {hidden ? '▷ Related' : '◁ Hide'}
+      </div>
+      {!hidden && <div style={{ background:'#fff', boxShadow:'2px 0 12px rgba(0,0,0,0.1)', borderRadius:'0 10px 10px 0', padding:'12px 14px', width:200, borderLeft:'3px solid '+c.gold }}>
         <div style={{ fontSize:9, fontWeight:700, color:c.gold, textTransform:'uppercase', letterSpacing:'0.1em', marginBottom:10 }}>
           📎 Related Content
         </div>
@@ -6844,7 +6809,7 @@ const ContentCircle = ({ currentContent, libraryItems, onOpen }) => {
             </div>
           </div>
         ))}
-      </div>
+      </div>}
     </div>
   );
   } catch(e) { return null; }
