@@ -1578,10 +1578,10 @@ const VisualChartContent = ({ c_content, templateName }) => {
   const maxVal = chartData && chartData.data && chartData.data.length > 0 ? Math.max(...chartData.data.map(d => Math.max(d.value||0, d.value2||0)), 1) : 1;
 
   return (
-    <div style={{ fontFamily: 'Arial, sans-serif', maxWidth: 700, margin: '0 auto', padding: 24 }}>
+    <div style={{ fontFamily: 'Arial, sans-serif', width: '100%', padding: '24px 32px', boxSizing: 'border-box' }}>
       <div style={{ marginBottom: 20, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
-          <div style={{ fontSize: 12, fontWeight: 700, color: '#C1A364', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 4 }}>Visual Chart</div>
+          <div style={{ fontSize: 12, fontWeight: 700, color: '#C1A364', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 4 }}>Visual Story</div>
           <div style={{ fontSize: 16, fontWeight: 700, color: '#0A1A2F' }}>{c_content.title || 'Untitled'}</div>
         </div>
         <button onClick={generateChart} disabled={loading}
@@ -1617,7 +1617,7 @@ const VisualChartContent = ({ c_content, templateName }) => {
             {/* Y-axis label */}
             <div style={{ fontSize: 10, color: '#9CA3AF', marginBottom: 8 }}>{chartData.yLabel}</div>
             {/* Chart area */}
-            <div style={{ height: 240, display: 'flex', alignItems: 'flex-end', gap: 8, padding: '0 4px', borderBottom: '2px solid #E5E7EB', borderLeft: '2px solid #E5E7EB', position: 'relative' }}>
+            <div style={{ height: 320, display: 'flex', alignItems: 'flex-end', gap: 6, padding: '20px 4px 0', borderBottom: '2px solid #E5E7EB', borderLeft: '2px solid #E5E7EB', position: 'relative', background: '#FAFAFA', borderRadius: '8px 8px 0 0' }}>
               {(chartData.data || []).map((d, i) => {
                 const pct = maxVal > 0 ? (d.value / maxVal) * 100 : 0;
                 const pct2 = d.value2 && maxVal > 0 ? (d.value2 / maxVal) * 100 : 0;
@@ -1665,6 +1665,133 @@ const VisualChartContent = ({ c_content, templateName }) => {
   );
 };
 
+
+// ── WHATSAPP / WECOM PREVIEW ─────────────────────────────────────────────────
+const WhatsAppPreviewContent = ({ c_content, templateName }) => {
+  const title = c_content.title || 'Untitled';
+  const firstSection = (c_content.sections || []).find(s => s.content);
+  const snippet = firstSection ? firstSection.content.slice(0, 100).trim() + '...' : 'Read the latest from J.P. Morgan Private Bank.';
+  const time = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+
+  const PhoneShell = ({ children, label, accent }) => (
+    <div style={{ width: 300, flexShrink: 0 }}>
+      <div style={{ fontSize: 10, fontWeight: 700, color: accent, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8, textAlign: 'center' }}>{label}</div>
+      <div style={{ background: '#1a1a1a', borderRadius: 36, padding: '10px 5px', boxShadow: '0 24px 64px rgba(0,0,0,0.5)' }}>
+        <div style={{ borderRadius: 30, overflow: 'hidden', height: 580 }}>{children}</div>
+      </div>
+    </div>
+  );
+
+  return (
+    <div style={{ display: 'flex', gap: 32, fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif', justifyContent: 'center', padding: '24px 16px', background: '#f8f9fa', minHeight: 640, alignItems: 'flex-start' }}>
+
+      {/* WhatsApp */}
+      <PhoneShell label="WhatsApp" accent="#25D366">
+        <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: '#ECE5DD' }}>
+          <div style={{ background: '#075E54' }}>
+            <div style={{ padding: '6px 14px', display: 'flex', justifyContent: 'space-between' }}>
+              <span style={{ fontSize: 9, color: '#fff', fontWeight: 600 }}>{time}</span>
+              <span style={{ fontSize: 8, color: 'rgba(255,255,255,0.7)' }}>●●●  ▌</span>
+            </div>
+            <div style={{ padding: '8px 14px 10px', display: 'flex', alignItems: 'center', gap: 9 }}>
+              <div style={{ width: 34, height: 34, borderRadius: '50%', background: '#128C7E', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, color: '#fff' }}>JP</div>
+              <div>
+                <div style={{ fontSize: 12, fontWeight: 600, color: '#fff' }}>JPM Private Bank GIS</div>
+                <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.6)' }}>online</div>
+              </div>
+              <div style={{ marginLeft: 'auto', display: 'flex', gap: 12, color: 'rgba(255,255,255,0.8)', fontSize: 14 }}>📞 ⋮</div>
+            </div>
+          </div>
+          <div style={{ flex: 1, padding: '12px 8px', overflow: 'auto' }}>
+            <div style={{ textAlign: 'center', marginBottom: 10 }}>
+              <span style={{ background: 'rgba(0,0,0,0.15)', color: '#fff', fontSize: 9, padding: '2px 8px', borderRadius: 8 }}>Today</span>
+            </div>
+            <div style={{ marginBottom: 8 }}>
+              <div style={{ maxWidth: '88%', background: '#fff', borderRadius: '0 10px 10px 10px', padding: '7px 9px', boxShadow: '0 1px 2px rgba(0,0,0,0.1)' }}>
+                <div style={{ borderLeft: '3px solid #25D366', paddingLeft: 7, marginBottom: 6 }}>
+                  <div style={{ fontSize: 9, color: '#25D366', fontWeight: 700, marginBottom: 2 }}>J.P. Morgan Private Bank</div>
+                  <div style={{ background: '#f5f5f5', borderRadius: 6, overflow: 'hidden' }}>
+                    <div style={{ background: '#128C7E', height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>📊</div>
+                    <div style={{ padding: '6px 8px' }}>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: '#1a1a1a', lineHeight: 1.3, marginBottom: 2 }}>{title}</div>
+                      <div style={{ fontSize: 10, color: '#667781', lineHeight: 1.4 }}>{snippet}</div>
+                      <div style={{ fontSize: 9, color: '#aaa', marginTop: 3 }}>long-and-short-jpm.netlify.app</div>
+                    </div>
+                  </div>
+                </div>
+                <div style={{ fontSize: 10, color: '#1a1a1a', marginBottom: 3 }}>New from GIS — tap to read 📈</div>
+                <div style={{ fontSize: 9, color: '#8696a0', textAlign: 'right' }}>{time} ✓✓</div>
+              </div>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+              <div style={{ background: '#DCF8C6', borderRadius: '10px 0 10px 10px', padding: '5px 9px 3px', boxShadow: '0 1px 2px rgba(0,0,0,0.08)' }}>
+                <div style={{ fontSize: 10, color: '#1a1a1a' }}>Thanks 👍</div>
+                <div style={{ fontSize: 9, color: '#8696a0', textAlign: 'right' }}>{time} ✓✓</div>
+              </div>
+            </div>
+          </div>
+          <div style={{ background: '#f0f2f5', padding: '6px 9px', display: 'flex', alignItems: 'center', gap: 7 }}>
+            <span style={{ fontSize: 17, color: '#8696a0' }}>😊</span>
+            <div style={{ flex: 1, background: '#fff', borderRadius: 18, padding: '7px 12px', fontSize: 11, color: '#8696a0' }}>Message</div>
+            <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#25D366', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14 }}>🎤</div>
+          </div>
+        </div>
+      </PhoneShell>
+
+      {/* WeCom */}
+      <PhoneShell label="WeCom · 企业微信" accent="#1aad19">
+        <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: '#ededed' }}>
+          <div style={{ background: '#fff', borderBottom: '1px solid #f0f0f0' }}>
+            <div style={{ padding: '6px 14px', display: 'flex', justifyContent: 'space-between' }}>
+              <span style={{ fontSize: 9, fontWeight: 600 }}>{time}</span>
+              <span style={{ fontSize: 8, color: '#999' }}>●●●  ▌</span>
+            </div>
+          </div>
+          <div style={{ background: '#1aad19', padding: '8px 14px 10px', display: 'flex', alignItems: 'center', gap: 9 }}>
+            <div style={{ width: 32, height: 32, borderRadius: 6, background: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, color: '#fff' }}>GIS</div>
+            <div>
+              <div style={{ fontSize: 12, fontWeight: 600, color: '#fff' }}>GIS Research · 企业群</div>
+              <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.65)' }}>24 members</div>
+            </div>
+            <div style={{ marginLeft: 'auto', color: 'rgba(255,255,255,0.8)', fontSize: 14 }}>⋮</div>
+          </div>
+          <div style={{ flex: 1, padding: '10px 8px', overflow: 'auto' }}>
+            <div style={{ textAlign: 'center', marginBottom: 10 }}>
+              <span style={{ fontSize: 9, color: '#999' }}>Today {time}</span>
+            </div>
+            <div style={{ display: 'flex', gap: 7, marginBottom: 10 }}>
+              <div style={{ width: 30, height: 30, borderRadius: 6, background: '#1aad19', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 700, color: '#fff' }}>JP</div>
+              <div>
+                <div style={{ fontSize: 9, color: '#888', marginBottom: 2 }}>Madison Faller</div>
+                <div style={{ background: '#fff', borderRadius: '0 8px 8px 8px', padding: '7px 9px', boxShadow: '0 1px 3px rgba(0,0,0,0.06)', maxWidth: 220 }}>
+                  <div style={{ border: '1px solid #ebebeb', borderRadius: 6, overflow: 'hidden', marginBottom: 6 }}>
+                    <div style={{ padding: '7px 9px', display: 'flex', gap: 7, alignItems: 'flex-start' }}>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: 11, fontWeight: 700, color: '#1a1a1a', lineHeight: 1.3, marginBottom: 2 }}>{title}</div>
+                        <div style={{ fontSize: 10, color: '#888', lineHeight: 1.4 }}>{snippet.slice(0, 60)}...</div>
+                      </div>
+                      <div style={{ width: 40, height: 40, background: '#1aad19', borderRadius: 4, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>📊</div>
+                    </div>
+                    <div style={{ background: '#f7f7f7', padding: '3px 9px', fontSize: 9, color: '#ccc', borderTop: '1px solid #f0f0f0' }}>JPM Private Bank · Long &amp; Short</div>
+                  </div>
+                  <div style={{ fontSize: 10, color: '#333' }}>GIS Research Update 📌</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div style={{ background: '#f7f7f7', padding: '6px 9px', display: 'flex', alignItems: 'center', gap: 7, borderTop: '1px solid #e8e8e8' }}>
+            <span style={{ fontSize: 17, color: '#ccc' }}>☺</span>
+            <div style={{ flex: 1, background: '#fff', borderRadius: 14, padding: '6px 11px', fontSize: 11, color: '#bbb', border: '1px solid #e8e8e8' }}>发送消息</div>
+            <span style={{ fontSize: 17, color: '#ccc' }}>＋</span>
+          </div>
+        </div>
+      </PhoneShell>
+
+    </div>
+  );
+};
+
+
 const OutputPreviewPanel = ({ isOpen, onClose, templateName, templateId, content, metadata }) => {
   const [device, setDevice] = useState('desktop');
   const [format, setFormat] = useState('web');
@@ -1679,14 +1806,12 @@ const OutputPreviewPanel = ({ isOpen, onClose, templateName, templateId, content
     { id: 'tablet', label: 'Tablet', icon: '📱' },
     { id: 'mobile', label: 'JPOI / JPO', icon: '📱' },
     { id: 'email', label: 'Email', icon: '✉️' },
+    { id: 'pdf', label: 'PDF', icon: '📄' },
+    { id: 'chart', label: '📊 Visual Story', icon: '📊' },
+    { id: 'whatsapp', label: 'WhatsApp / WeCom', icon: '💬' },
   ];
 
-  const formats = [
-    { id: 'web', label: 'Web View' },
-    { id: 'email', label: 'Email' },
-    { id: 'pdf', label: 'PDF' },
-    { id: 'chart', label: '📊 Visual Chart' },
-  ];
+  const formats = [{ id: 'web', label: 'Web View' }]; // legacy - now merged into devices
 
   // JPM Logo Component - exact match to their site
   const JPMLogo = ({ size = 'normal' }) => (
@@ -2574,10 +2699,14 @@ const OutputPreviewPanel = ({ isOpen, onClose, templateName, templateId, content
               maxWidth: format === 'pdf' ? 680 : 'none',
               margin: format === 'pdf' ? '0 auto' : 0
             }}>
-              {format === 'chart'
+              {device === 'chart'
                 ? <VisualChartContent c_content={c_content} templateName={templateName} />
+                : device === 'whatsapp'
+                ? <WhatsAppPreviewContent c_content={c_content} templateName={templateName} />
                 : device === 'email'
                 ? <EmailPreviewContent c_content={c_content} templateName={templateName} metadata={m} />
+                : device === 'pdf'
+                ? <ArticleContent isMobile={false} isEmail={false} isPDF={true} />
                 : templateId === 'videoPublish'
                 ? <VideoArticleContent isMobile={isMobile} />
                 : templateId === 'eventResponse'
@@ -6645,31 +6774,53 @@ const ContentCircle = ({ currentContent, libraryItems, onOpen }) => {
   if (!currentContent || !libraryItems) return null;
 
   try {
-  // Find related by tags, keywords in title/tagline
+  // Extract all text being written — title, sections content, product tags
   const currentTags = Array.isArray(currentContent.tags) ? currentContent.tags : [];
-  const currentTitle = (currentContent.title || '').toLowerCase();
-  const currentWords = currentTitle.split(/\s+/).filter(w => w.length > 4);
+  const currentProductTags = Array.isArray(currentContent.productTags) ? currentContent.productTags : [];
+  const allCurrentText = [
+    currentContent.title || '',
+    currentContent.tagline || '',
+    ...(currentContent.sections || []).map(s => s.content || ''),
+  ].join(' ').toLowerCase();
+
+  // Extract meaningful keywords from the actual content being written
+  const stopWords = new Set(['the','and','for','that','this','with','from','have','been','will','they','their','which','when','also','into','more','than','are','was','were','has','had','but','not','all','can','its','our','we','us','as','at','be','by','do','he','in','is','it','no','of','on','or','so','to','up','an','if','me','my','or','you']);
+  const contentWords = allCurrentText.split(/\W+/).filter(w => w.length > 4 && !stopWords.has(w));
+  const wordFreq = {};
+  contentWords.forEach(w => { wordFreq[w] = (wordFreq[w] || 0) + 1; });
+  const topWords = Object.entries(wordFreq).sort((a,b) => b[1]-a[1]).slice(0, 15).map(([w]) => w);
+
+  // Only surface related content when there's something being written
+  if (topWords.length === 0 && currentTags.length === 0 && currentProductTags.length === 0) return null;
 
   const scored = libraryItems
     .filter(item => item.id !== currentContent.id && item.status === 'published')
     .map(item => {
       let score = 0;
-      // Tag overlap
-      const itemTags = item.tags || [];
-      const overlap = currentTags.filter(t => itemTags.includes(t)).length;
-      score += overlap * 3;
-      // Title keyword overlap
-      const itemTitle = (item.title || '').toLowerCase();
-      currentWords.forEach(w => { if (itemTitle.includes(w)) score += 1; });
-      // Recency bonus
+      const itemTags = [...(item.tags || []), ...(item.productTags || [])].map(t => t.toLowerCase());
+      const itemText = [item.title, item.tagline, ...(item.sections||[]).map(s => s.content)].join(' ').toLowerCase();
+
+      // Tag overlap (product tags weighted highest)
+      currentProductTags.forEach(t => { if (itemTags.includes(t.toLowerCase())) score += 5; });
+      currentTags.forEach(t => { if (itemTags.includes(t.toLowerCase())) score += 3; });
+
+      // Content keyword overlap — the main signal
+      topWords.forEach(w => {
+        if (itemText.includes(w)) score += 2;
+        if ((item.title || '').toLowerCase().includes(w)) score += 3; // title match weighted higher
+      });
+
+      // High qScore bonus
+      if ((item.qScore || 0) >= 4.5) score += 3;
+      else if ((item.qScore || 0) >= 4) score += 1;
+
+      // Recency bonus (for content with similar themes)
       const daysSince = (Date.now() - new Date(item.publishedDate || item.createdDate).getTime()) / 86400000;
-      if (daysSince < 7) score += 2;
-      else if (daysSince < 30) score += 1;
-      // High score bonus
-      if ((item.qScore || 0) >= 4) score += 2;
+      if (daysSince < 14 && score > 0) score += 2;
+
       return { ...item, _score: score };
     })
-    .filter(item => item._score > 0)
+    .filter(item => item._score >= 3) // minimum threshold
     .sort((a, b) => b._score - a._score)
     .slice(0, 3);
 
@@ -6719,7 +6870,7 @@ const FORWARD_EVENTS_2026 = [
 ];
 
 
-const ForwardLookTab = () => {
+const ForwardLookTab = ({ onCreateContent: handleCreateFromEvent }) => {
   const [view, setView] = React.useState('calendar');
   const [search, setSearch] = React.useState('');
   const [showExposure, setShowExposure] = React.useState(null);
@@ -6763,7 +6914,7 @@ const ForwardLookTab = () => {
     setLoading(false);
   };
 
-  const EventCard = ({ event, isPast }) => {
+  const EventCard = ({ event, isPast, onCreateContent }) => {
     const bm = beatMiss[event.title];
     const verdictColor = { beat:'#059669', miss:'#DC2626', 'in-line':'#6B7280', 'n/a':'#9CA3AF' };
     return (
@@ -6818,6 +6969,20 @@ const ForwardLookTab = () => {
             <span style={{ fontSize:11, color:c.slate, flex:1 }}>{bm.summary}</span>
           </div>
         )}
+        {/* Create content from this event */}
+        <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px solid ' + c.pearl, display: 'flex', gap: 8 }}>
+          <button onClick={() => onCreateContent && onCreateContent(event)}
+            style={{ flex: 1, padding: '7px 12px', borderRadius: 6, border: 'none', background: c.navy, color: '#fff', fontSize: 11, fontWeight: 600, cursor: 'pointer' }}>
+            ✍️ Create Desk Commentary
+          </button>
+          {event.ticker && (
+            <button onClick={(e) => { e.stopPropagation(); onCreateContent && onCreateContent(event, true); }}
+              style={{ padding: '7px 12px', borderRadius: 6, border: '1px solid ' + c.teal, background: '#F0F9FF', color: c.teal, fontSize: 11, fontWeight: 600, cursor: 'pointer' }}>
+              ⚡ + Auto-generate
+            </button>
+          )}
+        </div>
+
         {/* Client exposure for earnings events */}
         {event.ticker && (
           <div style={{ marginTop:8 }}>
@@ -6892,10 +7057,10 @@ const ForwardLookTab = () => {
       </div>
       {view === 'calendar' ? (
         upcoming.length === 0 ? <div style={{ textAlign:'center', color:c.slate, padding:40 }}>No upcoming events found</div> :
-        upcoming.map((e, i) => <EventCard key={i} event={e} isPast={false} />)
+        upcoming.map((e, i) => <EventCard key={i} event={e} isPast={false} onCreateContent={handleCreateFromEvent} />)
       ) : (
         past.length === 0 ? <div style={{ textAlign:'center', color:c.slate, padding:40 }}>No past events to show</div> :
-        past.map((e, i) => <EventCard key={i} event={e} isPast={true} />)
+        past.map((e, i) => <EventCard key={i} event={e} isPast={true} onCreateContent={handleCreateFromEvent} />)
       )}
     </div>
   );
@@ -6924,139 +7089,153 @@ const AboutTab = () => {
   ];
 
   const publications = [
-    {
+        {
       id:'headline', name:'Headline', icon:'⚡', team:'All', internal:true,
       format:'Under 100 words. Direct, fast, conclusion-first.',
-      voice:'JPM Private Bank desk voice. The fastest reactive format.',
-      structure:'Title + one tight paragraph or 2–3 bullets max.',
+      voice:'The fastest reactive format in the platform. Desk commentary voice but even shorter. No structure required — one clear declarative sentence that states what happened and why it matters, followed by the implication.',
+      triggers:'Breaking news, a fast market move, a data print that needs an immediate one-line view. Designed to be sent in the first 15 minutes after an event.',
+      structure:'Title (declarative, states the view) + one section: Key Message. 100 words maximum.',
+      whenToUse:'When speed matters more than depth. When an advisor needs something to send a client in the next 10 minutes. Not for nuanced analysis — for fast, confident, directional views.',
+      devNote:'Template: headline. Generate Idea uses standard XML prompt. No web search. claude-haiku-4-5-20251001 | 1,200 tokens.',
       systemPrompt:'You are a senior J.P. Morgan Private Bank strategist. Institutional voice, direct, confident. Lead with conclusion. Return only XML.',
-      userPrompt:'Template: Headline\nWord target: Under 100 words. Direct and reactive.\n\n<TITLE>title</TITLE><SECTION id="key" title="Key Message">content</SECTION>',
-      model:'claude-haiku-4-5-20251001 | 1,200 tokens',
-      nexus:false, generate:true,
+      userPrompt:'<TITLE>title</TITLE><SECTION id="key" title="Key Message">Under 100 words. Direct. Reactive. Lead with conclusion.</SECTION>',
+      model:'claude-haiku-4-5-20251001 | 1,200 tokens', nexus:false, generate:true,
     },
     {
       id:'deskCommentary', name:'Desk Commentary', icon:'💬', team:'All', nexus:false,
-      format:'100–150 words. One tight paragraph only.',
-      voice:'JPM/Bridgewater. Lead with conclusion. What happened, why it matters, what JPM thinks. No throat-clearing.',
-      structure:'Title + single paragraph textarea. Word counter shown.',
+      format:'100–150 words. One paragraph only. No sub-sections.',
+      voice:'JPM/Bridgewater voice. The reader should know the conclusion by the end of the first sentence. Everything after is supporting evidence. Never use passive voice. Never set up context before arriving at the point. Lead with the event, then the significance, then the JPM view — all in one flowing paragraph.',
+      triggers:'A Fed decision, a major earnings beat or miss, a significant macro data print, a geopolitical development that moves markets. Anything that advisors need to address in client conversations that day.',
+      structure:'Title (declarative, states the view — e.g. "Fed holds — but the tone was the story") + one textarea with a live word counter. Target 100–150 words.',
+      whenToUse:'When you need something clients can read in 30 seconds. When advisors ask "what should I say on calls today?" When the view is clear and the conclusion is non-controversial within JPM.',
+      notForUse:'Long-form analysis. Nuanced or complicated arguments that require context. Anything requiring charts or data visualisation.',
+      devNote:'Template: deskCommentary. Uses single textarea (not MovableSectionsEditor). Generate Idea produces one SECTION with everything merged. claude-haiku-4-5-20251001 | 1,200 tokens. Client exposure: productTags trigger Orion panel (mock data currently — connect Orion API).',
       systemPrompt:'You are a senior J.P. Morgan Private Bank strategist. Institutional voice, direct, confident. Lead with conclusion. Return only XML.',
-      userPrompt:'Template: Desk Commentary\nWord target: 100-150 words. One tight paragraph. Lead with conclusion. JPM/Bridgewater institutional voice.\n\n<TITLE>title — declarative, states the view</TITLE><SECTION id="headline" title="Headline View">Write one tight paragraph, 100-150 words maximum...</SECTION>',
-      model:'claude-haiku-4-5-20251001 | 1,200 tokens',
-      generate:true,
+      userPrompt:'<TITLE>title — declarative, states the view</TITLE><SECTION id="headline" title="Headline View">One tight paragraph, 100-150 words. Lead with conclusion. JPM/Bridgewater voice. What happened, why it matters, what JPM thinks. No throat-clearing.</SECTION>',
+      model:'claude-haiku-4-5-20251001 | 1,200 tokens', generate:true,
     },
     {
       id:'topMarketTakeaways', name:'Top Market Takeaways', icon:'📰', team:'GIS', nexus:true,
-      format:'600–900 words. Op-ed essay. Single thesis.',
-      voice:'Slightly provocative. Narrative flow. Descriptive headings. Never a bullet list.',
-      structure:'Hook → The Key → Two analytical sections → Portfolio Implications.',
+      format:'600–900 words. Op-ed essay. Single thesis. Not a list.',
+      voice:'Slightly provocative. The title should create mild tension. The piece should resolve that tension. Narrative flow throughout — no bullet points anywhere. Each section heading should work as a standalone sentence that advances the argument. The reader should finish the piece thinking differently about something, not just feeling informed.',
+      triggers:'A market inflection point. A theme that is being misread by consensus. A positioning change the team wants to explain to clients. A geopolitical or macro development that requires a considered view rather than reactive commentary.',
+      structure:'Opening hook paragraph (state the tension, ~100 words) → The Key (2–3 sentence crystallisation of the central insight) → Two analytical sections with descriptive headings (~175 words each) → Portfolio Implications (~90 words).',
+      whenToUse:'When the team has a genuine view that goes beyond the consensus. When a theme is developing over days or weeks and deserves a considered essay. The flagship weekly format — the one clients most associate with GIS.',
+      aiGeneration:'Generate Idea fires a web search for today\'s most relevant story, then writes the full TMT in XML. Five sections: hook, thekey, section2, section3, close. The search result grounds the essay in current events.',
+      devNote:'Template: topMarketTakeaways. Generate Idea uses web_search tool first, then builds essay. claude-haiku-4-5-20251001 + web_search | 1,000 tokens.',
       systemPrompt:'You are a senior J.P. Morgan Private Bank strategist. Write a TMT as a thesis-driven narrative essay — NOT a list. Provocative title, flowing narrative with descriptive headings, 600-900 words, polished op-ed style. Return only XML.',
-      userPrompt:'Uses web_search for today\'s top story, then builds XML structure with TITLE, hook, thekey, section2, section3, close sections.',
-      model:'claude-haiku-4-5-20251001 + web_search | 1,000 tokens',
-      generate:true,
+      userPrompt:'Search for today\'s most relevant market story, then write TITLE + hook + thekey + section2 + section3 + close sections.',
+      model:'claude-haiku-4-5-20251001 + web_search | 1,000 tokens', generate:true,
     },
     {
       id:'ideasInsights', name:'Ideas & Insights', icon:'💡', team:'GIS', nexus:true,
-      format:'1,200–2,000 words. Always 2 data-driven charts.',
-      voice:'Research depth. Data-led. "What the market is missing" is the differentiating section.',
-      structure:'The Opportunity → What the Data Shows (Chart 1) → What the Market Is Missing (Chart 2) → JPM View → What To Do.',
-      systemPrompt:'You are a senior J.P. Morgan Private Bank GIS strategist. Write an Ideas & Insights deep-dive. You MUST generate 2 charts with realistic data in CHART XML tags.',
-      userPrompt:'Uses web_search. Returns TITLE, SUBTITLE, 5 SECTIONs, and 2 CHART tags with DATAPOINTS.',
-      model:'claude-haiku-4-5-20251001 + web_search | 1,000 tokens',
-      generate:true,
+      format:'1,200–2,000 words. Always includes exactly 2 data-driven charts.',
+      voice:'Research depth. Data-led. The most analytical format in the platform. "What the Market Is Missing" is the most important section — this is where the differentiated JPM view must live. Should be saying something that no other major bank\'s research team is saying, or saying it in a materially different way.',
+      triggers:'A single investment opportunity or thesis that requires deep analysis. A sector re-rating. A structural theme with investable implications. An asset class that is being mispriced by the market.',
+      structure:'The Opportunity (~150 words, state the thesis and JPM view) → What the Data Shows (~300 words, evidence base, reference Chart 1) → What the Market Is Missing (~300 words, differentiated view, reference Chart 2) → The JPM View (~150 words, unambiguous positioning) → What To Do (~150 words, specific allocation guidance). Two CHART tags with realistic data are required.',
+      whenToUse:'When the team wants to make a case for a specific investment. When there is a compelling data story that supports a non-consensus view. When advisors need something they can walk through with clients in a 20-minute conversation.',
+      chartRequirement:'Two charts are mandatory. Chart 1 ("What the Data Shows") presents the evidence base. Chart 2 ("What the Market Is Missing") presents the differentiated insight. Charts include title, subtitle, chart type, axes labels, source, and data points.',
+      devNote:'Template: ideasInsights. Generate Idea uses web_search then builds XML with 5 SECTION tags and 2 CHART tags with DATAPOINTS. claude-haiku-4-5-20251001 + web_search | 1,000 tokens.',
+      systemPrompt:'You are a senior J.P. Morgan Private Bank GIS strategist. Write an Ideas & Insights deep-dive. You MUST generate 2 charts with realistic data in CHART XML tags. Structure: The Opportunity, What the Data Shows (Chart 1), What the Market Is Missing (Chart 2), The JPM View, What To Do.',
+      userPrompt:'Uses web_search. Returns 5 SECTIONs + 2 CHARTs with DATAPOINTS in format "Label:value,Label:value".',
+      model:'claude-haiku-4-5-20251001 + web_search | 1,000 tokens', generate:true,
     },
     {
       id:'macroMarkets', name:'Macro & Markets', icon:'🌍', team:'GIS', nexus:true,
-      format:'3,000 words. AI Research Assistant panel.',
-      voice:'Most polished format. Essay quality. Conclusion-led sections throughout.',
-      structure:'6-field brief (Thesis, Markets, Data, JPM View, Charts, Consensus to Challenge) → 8-section essay.',
+      format:'3,000 words. The platform\'s flagship long-form essay. Essay quality throughout.',
+      voice:'The most polished format. Equivalent in quality and scope to the monthly GIS View publication. Calm, measured, intellectually confident. Conclusion-led sections throughout. The reader should feel they have received a complete briefing on a major macro theme — not just a summary.',
+      triggers:'A major macro turning point. A theme that requires 3,000 words to do justice to. Monthly or quarterly market reviews. Annual and mid-year outlook publications. Deep-dives into structural themes (deglobalisation, AI impact on economies, demographic shifts).',
+      structure:'The AI Research Assistant requires a 6-field brief. Output: Opening Context → Core Analysis (2–4 sections with descriptive headings) → Key Risks → Implications and What to Watch → Conclusion. Each section should work as a standalone piece.',
+      aiBriefFields:'1. Core Research Thesis (required) — the central investment argument. 2. Markets/Regions/Assets — focus areas. 3. Key Data Points to Reference. 4. JPM House View / Our Angle. 5. Chart Narratives (optional). 6. Consensus to Challenge (optional).',
+      whenToUse:'Monthly GIS View. Annual outlook. Mid-year outlook. Deep structural theme essays. Any piece that requires genuine depth and will be sent to the broadest external client distribution.',
+      devNote:'Template: macroMarkets. Uses AI Research Assistant panel (not Generate Idea button). Separate AIDraftingPanel with 6 structured fields. claude-sonnet-4-20250514 | 2,500 tokens. Higher model tier for quality.',
       systemPrompt:'You are a senior J.P. Morgan Private Bank Economy & Markets writer. Calm, measured, intellectually confident. Polished essay. Return only XML.',
-      userPrompt:'ROLE + TONE + STRUCTURE + GUARDRAILS + RESEARCH BRIEF (all 6 fields). Target 3,000 words across: opening, 3 analysis sections, risks, implications, conclusion.',
-      model:'claude-sonnet-4-20250514 | 2,500 tokens',
-      generate:false, aiAssist:true,
+      userPrompt:'ROLE + TONE + STRUCTURE instruction (3,000 word target, 8 sections) + GUARDRAILS + all 6 brief fields. Returns TITLE + 8 SECTION tags.',
+      model:'claude-sonnet-4-20250514 | 2,500 tokens', generate:false, aiAssist:true,
     },
     {
       id:'gisView', name:'GIS View', icon:'🎯', team:'GIS', nexus:true,
-      format:'200–400 words. Direct positioning statement.',
-      voice:'Most direct statement of current JPM conviction. No ambiguity.',
-      structure:'Key Message → Context → Our View.',
+      format:'200–400 words. The most direct statement of current JPM positioning.',
+      voice:'No ambiguity. This is the team\'s official, citable view on an asset class, market, or theme. Not an essay — a positioning statement. The reader should finish knowing exactly what JPM thinks and what advisors should tell clients.',
+      triggers:'A conviction change in the team\'s positioning. A reaffirmation after a market move. A new theme entering the team\'s coverage. A view that needs to be on record for advisors to reference.',
+      structure:'Key Message (the view in one paragraph, lead with conviction) → Context (data and rationale) → Our View (what this means for positioning).',
+      devNote:'Template: gisView. Generate Idea uses web_search. claude-haiku-4-5-20251001 + web_search | 1,000 tokens.',
       systemPrompt:'You are a senior J.P. Morgan Private Bank strategist. Institutional voice, direct, confident. Lead with conclusion. Return only XML.',
-      userPrompt:'Uses web_search. Returns TITLE + 3 SECTIONs (key, context, view).',
-      model:'claude-haiku-4-5-20251001 + web_search | 1,000 tokens',
-      generate:true,
+      userPrompt:'Uses web_search. Returns TITLE + 3 SECTIONs: key, context, view.',
+      model:'claude-haiku-4-5-20251001 + web_search | 1,000 tokens', generate:true,
     },
     {
       id:'specialistSpotlight', name:'Specialist Spotlight', icon:'👤', team:'GIS', nexus:true,
-      format:'Under 200 words. Named specialist\'s direct view.',
-      voice:'Most personal and direct format. Written as the specialist\'s own voice.',
-      structure:'The Lead → The View → Why Now → Advisor Takeaway.',
+      format:'Under 200 words. The most personal and direct of all GIS formats.',
+      voice:'Written as the specialist\'s own voice — not the house view, but their personal conviction on an instrument or theme they cover directly. More opinionated than other formats. The specialist is named and accountable.',
+      triggers:'A specialist has a strong conviction on a specific instrument, sector, or theme they cover. A named view rather than a house view. Particularly effective for specialist areas: specific equities, commodities, currencies, structured products.',
+      structure:'The Lead (why this matters now) → The View (the specialist\'s conviction) → Why Now (timing rationale) → Advisor Takeaway (what advisors should do with this).',
+      devNote:'Template: specialistSpotlight. Standard AI generation. claude-haiku-4-5-20251001 | 1,200 tokens.',
       systemPrompt:'You are a senior J.P. Morgan Private Bank strategist. Institutional voice, direct, confident. Lead with conclusion. Return only XML.',
       userPrompt:'Returns TITLE + 4 SECTIONs: lead, view, why_now, takeaway.',
-      model:'claude-haiku-4-5-20251001 | 1,200 tokens',
-      generate:true,
+      model:'claude-haiku-4-5-20251001 | 1,200 tokens', generate:true,
     },
     {
       id:'dailyMarketUpdate', name:'Daily Market Update', icon:'📈', team:'GIS', internal:true,
       format:'Internal morning briefing. Structured daily format.',
-      voice:'Advisor-facing. Efficient. Structured for a 90-second read before a client call.',
-      structure:'Optional PSA → Quote of the Day → Market metrics tiles (live fetch) → Client flow bar chart → Commentary → 3 × Story + Our View → Op-Ed → PSAs.',
+      voice:'Advisor-facing. Efficient. Designed for a 90-second read before a client call. Not polished prose — punchy, specific, numbers-led. The commentary and story sections should feel like a colleague briefing you in the lift.',
+      triggers:'Every market morning. Distributed to advisors before they take client calls. Never sent externally.',
+      structure:'Optional PSA at top → Quote of the Day (editable, rotates daily) → What The Markets Did (metric tiles with live data fetch) → What Our Clients Did (buy/sell bar chart + skew) → Market Commentary (2–3 sentences) → 3 Stories each with Our View → Op-Ed (500 words, conversation starter) → PSAs.',
+      marketDataFetch:'The Fetch Yesterday\'s Data button calls claude-sonnet-4 with web_search to find yesterday\'s closing prices for the selected region\'s indices. Returns JSON array with name, value, change, pct, direction. Skips weekends automatically. Connects to Orion for real client flow data (mock data currently).',
+      opEd:'The Op-Ed section (500 words max) is the most important and differentiating section. It should be a genuine conversation starter — a provocative idea, a contrarian view, a chart that tells a story. Something an advisor can use at a dinner table or in a client meeting.',
+      devNote:'Template: dailyMarketUpdate. Generate Idea uses claude-haiku | 1,200 tokens. Market data fetch uses claude-sonnet + web_search. Client flow section uses mock Orion data — connect real API at getExposure().',
       systemPrompt:'You are a JPMorgan Private Bank content strategist. Return only XML using the exact tags provided. No JSON, no markdown, no explanation.',
-      userPrompt:'Fetch Yesterday\'s Data: claude-sonnet + web_search → JSON [{name,value,change,pct,direction}]. Generate Idea: TITLE + commentary (no title) + 3 story sections with AI-generated headlines + Our View pairs + Op-Ed + PSAs.',
-      model:'claude-haiku-4-5-20251001 | 1,200 tokens | claude-sonnet for market data fetch',
-      generate:true,
-    },
-    {
-      id:'chartOfTheWeek', name:'Chart of the Week', icon:'📈', team:'GIS', nexus:true,
-      format:'Single uploaded chart + commentary.',
-      voice:'The chart is the story. Text explains what it means and why it matters.',
-      structure:'Click-to-upload or drag-and-drop chart image → What It Means → Key Takeaway.',
-      systemPrompt:'Standard. Institutional voice. Lead with conclusion. Return only XML.',
-      userPrompt:'Returns TITLE + meaning + takeaway sections.',
-      model:'claude-haiku-4-5-20251001 | 1,200 tokens',
-      generate:true,
-    },
-    {
-      id:'eventResponse', name:'Event Response', icon:'⚡', team:'All', nexus:true,
-      format:'40–60 words per update. Multiple timestamped updates.',
-      voice:'Live rolling commentary. Reactive desk voice. Facts first, view second.',
-      structure:'Headline + context + 3 × timestamped updates.',
-      systemPrompt:'You are a J.P. Morgan Private Bank strategist. Write a live event response feed. Desk commentary style — 40-60 words per update. Return only XML.',
-      userPrompt:'Returns TITLE + key + context + view sections.',
-      model:'claude-haiku-4-5-20251001 | 1,200 tokens',
-      generate:true,
+      userPrompt:'Returns: commentary (no title) + 3 story sections with AI-generated headlines + Our View pairs + oped + psa sections. Story titles are proper punchy headlines, not generic labels.',
+      model:'claude-haiku-4-5-20251001 | 1,200 tokens (generate) | claude-sonnet-4 + web_search (market data)', generate:true,
     },
     {
       id:'playground', name:'The Playground', icon:'🎯', team:'GIS', internal:true,
-      format:'Completely free-form. No word limit, no structure.',
-      voice:'Thinking space. Not a published format. AI challenges and enriches thinking.',
-      structure:'Optional title → Free-form textarea → Challenge My Thinking → Threaded counterpart responses with history.',
-      systemPrompt:'Senior external research counterpart. Challenge key assumptions, add context, suggest angles, point to 2-3 related themes. Direct, intellectually rigorous, constructive. 300 words max, 3-4 numbered points.',
-      userPrompt:'"Here is my thinking in progress: {freeform}. Challenge this, add context, help me develop it."',
-      model:'claude-sonnet-4-20250514 | 1,000 tokens',
-      generate:false, aiAssist:false,
+      format:'Completely free-form. No word limit, no structure, no constraints.',
+      voice:'Thinking space. This is where ideas go before they become publications. The AI acts as an external research counterpart — challenging assumptions, adding context, suggesting angles — not as a writer.',
+      triggers:'Half-formed ideas. Questions the team is wrestling with. A data point that seems interesting but hasn\'t been developed. A thesis the team wants to stress-test before committing to paper.',
+      structure:'Optional title → Large free-form textarea → Challenge My Thinking button → Threaded counterpart responses with timestamps. Challenges are stored in document history so the evolution of thinking can be tracked.',
+      aiRole:'The AI persona is a senior external research counterpart — think a seasoned economist at a rival institution, a macro PM, or a well-regarded sell-side strategist. It challenges assumptions, adds context the author may have missed, suggests 2–3 related themes, and points to data points that complicate or strengthen the argument. It does not write the piece — it sharpens the thinking.',
+      devNote:'Template: playground. GIS only — not available in other teams. AI Assist button disabled by design. Generate Idea available but not recommended. Challenge My Thinking uses claude-sonnet-4 | 1,000 tokens. Challenge history stored in document.',
+      systemPrompt:'Senior external research counterpart. Challenge the key assumptions, add context the author may have missed, suggest angles and complications that would strengthen the thinking, point to 2-3 related themes or data points. Direct, intellectually rigorous, constructive. 300 words max, 3-4 numbered points.',
+      userPrompt:'"Here is my thinking in progress: {freeform}. Challenge this, add context, and help me develop it further."',
+      model:'claude-sonnet-4-20250514 | 1,000 tokens', generate:false, aiAssist:false,
     },
     {
-      id:'tradeIdea', name:'Trade Idea', icon:'📍', team:'Investment Solutions', nexus:false,
-      format:'Specific actionable trade with entry, target, stop-loss.',
-      voice:'Direct. Specific. Numbers-led.',
-      structure:'Title + Entry + Target + Stop-loss + Thesis + Rationale.',
+      id:'chartOfTheWeek', name:'Chart of the Week', icon:'📈', team:'GIS', nexus:true,
+      format:'Single chart + minimal commentary. The chart is the story.',
+      voice:'The text explains what the chart means and why it matters. Maximum two short sections. The title of the chart should tell the reader exactly what they\'re looking at — never a generic label.',
+      triggers:'A chart that tells a story no words can tell as efficiently. A data visualisation that makes the investment case immediately obvious. Particularly effective for showing long-run trends, comparative analysis, or inflection points.',
+      structure:'Title → Chart upload (click or drag-and-drop, supports all image formats) → What It Means (2–3 sentence interpretation) → Key Takeaway (one actionable sentence).',
+      devNote:'Template: chartOfTheWeek. Chart upload uses FileReader API, stores as base64 in content state. Standard AI generation for text sections. claude-haiku-4-5-20251001 | 1,200 tokens.',
       systemPrompt:'Standard institutional voice. Lead with conclusion. Return only XML.',
-      userPrompt:'Returns TITLE + ENTRY + TARGET + STOPLOSS + thesis + rationale.',
-      model:'claude-haiku-4-5-20251001 | 1,200 tokens',
-      generate:true,
+      userPrompt:'Returns TITLE + meaning + takeaway sections.',
+      model:'claude-haiku-4-5-20251001 | 1,200 tokens', generate:true,
+    },
+    {
+      id:'eventResponse', name:'Event Response', icon:'⚡', team:'All', nexus:true,
+      format:'40–60 words per update. Multiple timestamped updates. Reactive.',
+      voice:'Live desk commentary. The most urgent register in the platform — but still calm. Never panicked. Facts first, view second, in every update. Written in the moment, reads like it.',
+      triggers:'A central bank decision (live updates as the press conference unfolds). A major geopolitical event. An earnings release being digested in real time. Any event where the situation is developing and clients want rolling updates.',
+      structure:'Opening headline + context paragraph → Multiple timestamped updates (each 40–60 words) → Each update: fact first, then view.',
+      devNote:'Template: eventResponse. Standard AI generation builds a 3-update structure. In production, updates should be added manually as events develop. claude-haiku-4-5-20251001 | 1,200 tokens.',
+      systemPrompt:'You are a J.P. Morgan Private Bank strategist. Write a live event response feed. Desk commentary style — 40-60 words per update. Reactive, direct.',
+      userPrompt:'Returns TITLE + key + context + view sections (multi-update structure).',
+      model:'claude-haiku-4-5-20251001 | 1,200 tokens', generate:true,
     },
     {
       id:'morningMeeting', name:'Morning Meeting', icon:'☀️', team:'GIS', internal:true,
-      format:'Under 300 words. Structured internal briefing.',
-      voice:'Briefing register. One line per section.',
-      structure:'Market overview → Key events today → Watch list → Themes.',
+      format:'Under 300 words. Structured briefing. Internal only.',
+      voice:'Briefing register. One line per section. Not prose — structured bullet format. Designed to be read aloud in 3 minutes.',
+      triggers:'Daily GIS morning meeting. Pre-market open briefing for the team.',
+      structure:'Market Overview → Key Events Today → Watch List → Themes.',
+      devNote:'Template: morningMeeting. Standard AI generation. claude-haiku-4-5-20251001 | 1,200 tokens.',
       systemPrompt:'Standard institutional voice. Return only XML.',
       userPrompt:'Returns TITLE + 4 structured sections.',
-      model:'claude-haiku-4-5-20251001 | 1,200 tokens',
-      generate:true,
+      model:'claude-haiku-4-5-20251001 | 1,200 tokens', generate:true,
     },
   ];
 
-  const styleGuideItems = [
+    const styleGuideItems = [
     { rule:'Lead with conclusion', detail:'Every piece, every section, every paragraph starts with the view. State the conclusion, then prove it. Never set up context before arriving at the point.\n\nWrong: "Markets have been volatile recently, with the Fed raising rates and inflation proving stickier than expected. This has caused some uncertainty. We believe this may affect equities."\n\nRight: "Equities face a tougher path. The Fed\'s higher-for-longer stance is compressing multiples precisely as earnings growth slows — a combination that historically resolves lower before it resolves higher."' },
     { rule:'Titles create tension or state a view', detail:'Good: "The Market Is Wrong About China." / "Two Engines. One Is Stalling." / "Is Dollar Dominance Really Structural?"\n\nBad: "China Equities Update" / "Q2 Outlook" / "Our Thoughts on the Fed"\n\nRule: if the title could appear on any large bank\'s research portal without embarrassment, it is too generic. Sharpen it.' },
     { rule:'Section headings are narrative', detail:'Good: "When the Map No Longer Matches the Territory"\nGood: "The Fed\'s Dilemma Has No Clean Solution"\n\nBad: "Background" / "Analysis" / "Section 2: Equities"\n\nEach heading should work as a standalone sentence that advances the argument.' },
@@ -7124,32 +7303,43 @@ const AboutTab = () => {
                 </div>
                 {/* Expanded rap sheet */}
                 {isOpen && (
-                  <div style={{ padding:'16px 18px', borderTop:'1px solid '+c.pearl }}>
-                    <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16, marginBottom:16 }}>
-                      <div>
-                        <div style={{ fontSize:9, fontWeight:700, color:c.gold, textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:6 }}>Voice & Tone</div>
-                        <div style={{ fontSize:12, lineHeight:1.6, color:c.navy }}>{p.voice}</div>
+                  <div style={{ padding:'16px 18px 20px', borderTop:'1px solid '+c.pearl }}>
+                    {/* Plain English section */}
+                    <div style={{ background:'#F8FAFC', borderRadius:8, padding:'14px 16px', marginBottom:16, border:'1px solid #E2E8F0' }}>
+                      <div style={{ fontSize:10, fontWeight:700, color:'#2563EB', textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:10 }}>📖 Plain English Guide</div>
+                      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:14 }}>
+                        {p.voice && <div><div style={{ fontSize:9, fontWeight:700, color:c.slate, textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:4 }}>Voice & Tone</div><div style={{ fontSize:12, lineHeight:1.65, color:c.navy }}>{p.voice}</div></div>}
+                        {p.whenToUse && <div><div style={{ fontSize:9, fontWeight:700, color:c.slate, textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:4 }}>When to Use</div><div style={{ fontSize:12, lineHeight:1.65, color:c.navy }}>{p.whenToUse}</div></div>}
+                        {p.notForUse && <div><div style={{ fontSize:9, fontWeight:700, color:c.neg, textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:4 }}>Not for Use When</div><div style={{ fontSize:12, lineHeight:1.65, color:c.navy }}>{p.notForUse}</div></div>}
+                        {p.triggers && <div><div style={{ fontSize:9, fontWeight:700, color:c.slate, textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:4 }}>Triggers</div><div style={{ fontSize:12, lineHeight:1.65, color:c.navy }}>{p.triggers}</div></div>}
+                        {p.structure && <div style={{ gridColumn:'1/-1' }}><div style={{ fontSize:9, fontWeight:700, color:c.slate, textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:4 }}>Structure</div><div style={{ fontSize:12, lineHeight:1.65, color:c.navy }}>{p.structure}</div></div>}
+                        {p.aiRole && <div style={{ gridColumn:'1/-1' }}><div style={{ fontSize:9, fontWeight:700, color:'#6B5B95', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:4 }}>AI Role in This Template</div><div style={{ fontSize:12, lineHeight:1.65, color:c.navy }}>{p.aiRole}</div></div>}
+                        {p.aiGeneration && <div style={{ gridColumn:'1/-1' }}><div style={{ fontSize:9, fontWeight:700, color:'#6B5B95', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:4 }}>How AI Generation Works</div><div style={{ fontSize:12, lineHeight:1.65, color:c.navy }}>{p.aiGeneration}</div></div>}
+                        {p.marketDataFetch && <div style={{ gridColumn:'1/-1' }}><div style={{ fontSize:9, fontWeight:700, color:c.teal, textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:4 }}>Market Data Fetch</div><div style={{ fontSize:12, lineHeight:1.65, color:c.navy }}>{p.marketDataFetch}</div></div>}
+                        {p.opEd && <div style={{ gridColumn:'1/-1' }}><div style={{ fontSize:9, fontWeight:700, color:c.gold, textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:4 }}>Op-Ed Section</div><div style={{ fontSize:12, lineHeight:1.65, color:c.navy }}>{p.opEd}</div></div>}
+                        {p.aiBriefFields && <div style={{ gridColumn:'1/-1' }}><div style={{ fontSize:9, fontWeight:700, color:'#6B5B95', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:4 }}>AI Research Brief Fields</div><div style={{ fontSize:12, lineHeight:1.65, color:c.navy, whiteSpace:'pre-line' }}>{p.aiBriefFields}</div></div>}
+                        {p.chartRequirement && <div style={{ gridColumn:'1/-1' }}><div style={{ fontSize:9, fontWeight:700, color:c.slate, textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:4 }}>Chart Requirement</div><div style={{ fontSize:12, lineHeight:1.65, color:c.navy }}>{p.chartRequirement}</div></div>}
                       </div>
-                      <div>
-                        <div style={{ fontSize:9, fontWeight:700, color:c.gold, textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:6 }}>Structure</div>
-                        <div style={{ fontSize:12, lineHeight:1.6, color:c.navy }}>{p.structure}</div>
+                    </div>
+                    {/* Developer / technical section */}
+                    <div style={{ background:'#1a1a2e', borderRadius:8, padding:'14px 16px', marginBottom:12 }}>
+                      <div style={{ fontSize:10, fontWeight:700, color:'#64ffda', textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:10 }}>⚙️ Developer Reference</div>
+                      {p.devNote && <div style={{ fontSize:11, color:'rgba(255,255,255,0.7)', lineHeight:1.6, marginBottom:10 }}>{p.devNote}</div>}
+                      <div style={{ marginBottom:8 }}>
+                        <div style={{ fontSize:9, fontWeight:700, color:'rgba(100,255,218,0.7)', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:3 }}>System Prompt</div>
+                        <div style={{ fontSize:10, lineHeight:1.6, color:'#a8dadc', fontFamily:'monospace', background:'rgba(0,0,0,0.3)', padding:'6px 10px', borderRadius:4 }}>{p.systemPrompt}</div>
                       </div>
+                      <div style={{ marginBottom:8 }}>
+                        <div style={{ fontSize:9, fontWeight:700, color:'rgba(100,255,218,0.7)', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:3 }}>User Prompt Shape</div>
+                        <div style={{ fontSize:10, lineHeight:1.6, color:'#a8dadc', fontFamily:'monospace', background:'rgba(0,0,0,0.3)', padding:'6px 10px', borderRadius:4 }}>{p.userPrompt}</div>
+                      </div>
+                      <div style={{ display:'inline-block', fontSize:9, padding:'3px 8px', borderRadius:4, background:'rgba(100,255,218,0.1)', color:'#64ffda', fontFamily:'monospace' }}>{p.model}</div>
                     </div>
-                    <div style={{ marginBottom:10 }}>
-                      <div style={{ fontSize:9, fontWeight:700, color:c.slate, textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:4 }}>Model & Tokens</div>
-                      <div style={{ fontSize:11, padding:'5px 10px', borderRadius:5, background:'#F0F9FF', color:c.teal, fontFamily:'monospace', display:'inline-block' }}>{p.model}</div>
-                    </div>
-                    <div style={{ marginBottom:10 }}>
-                      <div style={{ fontSize:9, fontWeight:700, color:c.slate, textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:4 }}>System Prompt</div>
-                      <div style={{ fontSize:11, lineHeight:1.6, color:c.navy, background:c.ivory, padding:'8px 12px', borderRadius:6, fontFamily:'monospace', whiteSpace:'pre-wrap' }}>{p.systemPrompt}</div>
-                    </div>
-                    <div>
-                      <div style={{ fontSize:9, fontWeight:700, color:c.slate, textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:4 }}>User Prompt / Structure</div>
-                      <div style={{ fontSize:11, lineHeight:1.6, color:c.navy, background:c.ivory, padding:'8px 12px', borderRadius:6, fontFamily:'monospace', whiteSpace:'pre-wrap' }}>{p.userPrompt}</div>
-                    </div>
-                    <div style={{ display:'flex', gap:8, marginTop:10 }}>
+                    <div style={{ display:'flex', gap:8 }}>
                       {p.generate && <span style={{ fontSize:9, padding:'3px 8px', borderRadius:10, background:'#ECFDF5', color:'#059669', fontWeight:600 }}>✓ Generate Idea</span>}
                       {p.aiAssist !== false && <span style={{ fontSize:9, padding:'3px 8px', borderRadius:10, background:'#EFF6FF', color:'#2563EB', fontWeight:600 }}>✓ AI Assist</span>}
+                      {p.nexus && <span style={{ fontSize:9, padding:'3px 8px', borderRadius:10, background:'#FFF9E6', color:c.gold, fontWeight:600 }}>Nexus</span>}
+                      {p.internal && <span style={{ fontSize:9, padding:'3px 8px', borderRadius:10, background:'#F0F9FF', color:c.teal, fontWeight:600 }}>Internal only</span>}
                     </div>
                   </div>
                 )}
@@ -7473,6 +7663,11 @@ ${sectionsText}`;
     { id:14, title:"ECB Decision: 25bp Cut — Less Dovish Than Hoped", type:"deskCommentary", typeLabel:"Desk Commentary", status:"approved", isExternal:false, author:"Nataliia Lipikhina", reviewer:"Thomas Mueller", team:"GIS", assetClass:"Fixed Income", tags:["ECB","Europe","rates","FX"], productTags:["EZU","BUND"], regions:["EMEA"], vertical:"", createdDate:"2026-03-27", publishedDate:null, expiryDate:null, lockedBy:null, lockedAt:null, views:0, history:[{action:"created",by:"Nataliia Lipikhina",at:"2026-03-27T14:00:00Z"},{action:"approved",by:"Thomas Mueller",at:"2026-03-28T09:00:00Z"}], sections:[{id:"headline",title:"Headline View",content:"The ECB delivered the expected 25bp cut to 2.5% but struck a more cautious tone than the market had priced, with Lagarde declining to signal the pace of future cuts given persistent services inflation. EUR/USD ticked higher on the hawkish read. We see two further cuts in 2026 — June and September — but the path is data-dependent and oil-price sensitive. Stay modestly long EUR duration via 5-year Bunds; avoid extending to 10-year until energy price clarity improves."}]},
     { id:15, title:"Strait of Hormuz: Week Two Update", type:"eventResponse", typeLabel:"Event Response", status:"approved", isExternal:true, author:"Elyse Ausenbaugh", reviewer:"Grace Chen", team:"Investment Solutions", assetClass:"Multi-Asset", tags:["Iran","oil","geopolitics","Hormuz"], productTags:["BNO","GLD","XLE"], regions:["Global"], vertical:"", createdDate:"2026-03-12", publishedDate:null, expiryDate:null, lockedBy:null, lockedAt:null, views:0, eventType:"Geopolitical", impact:"Elevated", eventDate:"2026-03-05", history:[{action:"created",by:"Elyse Ausenbaugh",at:"2026-03-12T08:00:00Z"},{action:"approved",by:"Grace Chen",at:"2026-03-12T14:00:00Z"}], sections:[{id:"hook",title:"Opening Context",content:"Two weeks into the Iran conflict, the Strait of Hormuz remains closed to commercial traffic. This feed continues tracking the JPM Private Bank response as the situation evolves."}], updates:[{id:"u1",title:"Week Two: Strait Remains Closed",timestamp:"08:00 GMT, 12 Mar",content:"Vessel traffic through the Strait is at zero for the 12th consecutive day. Oil has stabilised around $105 after the initial spike to $118. The shock is supply disruption, not supply destruction."},{id:"u2",title:"Portfolio Positioning Update",timestamp:"12:00 GMT, 12 Mar",content:"We have moved to underweight European equities and overweight US on a relative basis. Added gold to 5% of portfolio as geopolitical hedge. Energy sector overweight maintained."},{id:"u3",title:"Scenario Analysis",timestamp:"16:00 GMT, 12 Mar",content:"Base case (60%): Strait reopens within 4-6 weeks, oil returns to $85-90, risk assets recover sharply. Bear case (20%): Prolonged closure beyond 8 weeks, oil reaches $130, global recession risk rises materially."}]},
     { id:16, title:"Window to the Markets: Oil Shock Special Edition", type:"videoPublish", typeLabel:"Video Publish", status:"approved", isExternal:true, author:"Grace Peters", reviewer:"Madison Faller", team:"GIS", assetClass:"Multi-Asset", tags:["video","oil","markets"], productTags:[], regions:["Global"], vertical:"", series:"Window to the Markets", region:"Global", createdDate:"2026-03-10", publishedDate:null, expiryDate:null, lockedBy:null, lockedAt:null, views:0, history:[{action:"created",by:"Grace Peters",at:"2026-03-10T09:00:00Z"},{action:"approved",by:"Madison Faller",at:"2026-03-11T10:00:00Z"}], sections:[{id:"summary",title:"Video Summary",content:"Grace Peters provides the JPM Private Bank view on the oil shock triggered by the Iran conflict — what it means for portfolios, which regions are most exposed, and what advisors should be telling clients."},{id:"keyPoints",title:"Key Takeaways",content:"Oil above $100 is a headwind, not a crisis — past shocks show markets recover when supply resumes. Europe bears the sharpest pain as a net oil importer. For nervous clients: trimming Europe, adding gold and infrastructure is the right near-term move."}]},
+    { id:20, title:"Long-Term Capital Market Assumptions 2026", type:"macroMarkets", typeLabel:"Macro & Markets", status:"published", isExternal:true, author:"Madison Faller", reviewer:"Erik Wytenus", team:"GIS", assetClass:"Multi-Asset", functionType:"Strategy", tags:["LTCMAs","long-term","multi-asset","outlook","returns"], productTags:["SPY","EFA","AGG","GLD"], regions:["Global"], vertical:"", createdDate:"2026-01-06", publishedDate:"2026-01-10", expiryDate:"2026-12-31", lockedBy:null, lockedAt:null, views:2341, qScore:4.8, tagline:"Our 10-15 year return assumptions across all major asset classes", history:[{action:"created",by:"Madison Faller",at:"2026-01-06T08:00:00Z"},{action:"published",by:"Erik Wytenus",at:"2026-01-10T08:00:00Z"}], sections:[{id:"opening",title:"The Setup",content:"Every year we update our long-term capital market assumptions. This year reflects a world that has re-priced risk meaningfully: higher rates, more volatile geopolitics, and a technology transformation whose economic effects are still being absorbed."},{id:"analysis1",title:"Core Return Assumptions",content:"For global equities, we project annualised returns of 7.2% in USD over the next decade. Investment grade credit offers 5.1% expected returns - the most attractive since 2010."},{id:"conclusion",title:"Conclusion",content:"The long run still works. Diversification still works. The inputs have changed; the framework has not."}]},
+    { id:21, title:"Global Family Office Survey 2026", type:"ideasInsights", typeLabel:"Ideas & Insights", status:"published", isExternal:true, author:"Kriti Gupta", reviewer:"Madison Faller", team:"GIS", assetClass:"Alternatives", functionType:"Strategy", tags:["family office","survey","alternatives","private markets","2026"], productTags:[], regions:["Global"], vertical:"Family Office & Dynasty Wealth", createdDate:"2026-02-03", publishedDate:"2026-02-10", expiryDate:"2026-08-10", lockedBy:null, lockedAt:null, views:1876, qScore:4.6, subtitle:"How 200 single-family offices are positioning for 2026 and beyond", history:[{action:"created",by:"Kriti Gupta",at:"2026-02-03T09:00:00Z"},{action:"published",by:"Madison Faller",at:"2026-02-10T08:00:00Z"}], sections:[{id:"opportunity",title:"Key Findings",content:"Our 2026 Global Family Office Survey polled 200 single-family offices across 28 countries, representing over $600 billion in combined AUM. Three themes dominate: rotation toward private markets, urgency around AI infrastructure, and rising interest in impact strategies."},{id:"data",title:"Asset Allocation Shifts",content:"Allocation to private equity increased to 28% of total AUM, up from 24% in 2023. Public equities fell to 31% from 38%. Cash rose to 12% - reflecting uncertainty rather than risk aversion."},{id:"jpmview",title:"Our View",content:"Advisors who can deliver co-investment opportunities and private market access will deepen family office relationships. Those who cannot risk losing wallet share."}]},
+    { id:22, title:"Mid-Year Outlook 2026: Recalibrating the Path", type:"macroMarkets", typeLabel:"Macro & Markets", status:"published", isExternal:true, author:"Erik Wytenus", reviewer:"Madison Faller", team:"GIS", assetClass:"Multi-Asset", functionType:"Strategy", tags:["mid-year","outlook","2026","recalibration","equities","rates"], productTags:["SPY","EFA","TLT","GLD"], regions:["Global"], vertical:"", createdDate:"2026-04-20", publishedDate:"2026-05-01", expiryDate:"2026-09-30", lockedBy:null, lockedAt:null, views:1654, qScore:4.7, tagline:"How has our January view held up - and where are we changing our minds?", history:[{action:"created",by:"Erik Wytenus",at:"2026-04-20T09:00:00Z"},{action:"published",by:"Madison Faller",at:"2026-05-01T08:00:00Z"}], sections:[{id:"opening",title:"How the Year Has Unfolded",content:"We wrote in January that 2026 would be a year of promise and pressure. Four months in, the pressure is more visible than the promise. US growth has slowed faster than our base case."},{id:"analysis1",title:"What We Got Right",content:"Our overweight to international equities has added approximately 8% of alpha relative to the S&P 500. The valuation re-rating we expected is playing out as expected."},{id:"analysis2",title:"Where We Are Adjusting",content:"We are reducing US equity to neutral and extending duration. We are adding to EM local currency debt."},{id:"conclusion",title:"Revised Positioning",content:"Quality over growth. International over domestic. Bonds deserve more respect than they are getting. Gold remains a core holding."}]},
+    { id:23, title:"GIS View: May 2026 - Staying the Course on International", type:"gisView", typeLabel:"GIS View", status:"published", isExternal:true, author:"Madison Faller", reviewer:null, team:"GIS", assetClass:"Equities", functionType:"Strategy", tags:["GIS View","international equities","positioning","May 2026"], productTags:["EFA","VEA","IEFA"], regions:["Global"], vertical:"", createdDate:"2026-05-05", publishedDate:"2026-05-06", expiryDate:"2026-07-06", lockedBy:null, lockedAt:null, views:892, qScore:4.5, history:[{action:"created",by:"Madison Faller",at:"2026-05-05T09:00:00Z"},{action:"published",by:"Madison Faller",at:"2026-05-06T08:00:00Z"}], sections:[{id:"key",title:"Key Message",content:"We maintain our preference for international over US equities. The valuation gap between European and US equities remains at decade-wide levels."},{id:"context",title:"Context",content:"Since our January overweight, international equities have added approximately 8% of alpha relative to the S&P 500. The thesis is playing out."},{id:"view",title:"Our View",content:"The case is intact: better valuations, improving earnings momentum, and a weaker dollar tailwind. Any pullback in European equities is a buying opportunity."}]},
+    { id:24, title:"Top Market Takeaways: The Fed Is Not Going to Save You This Time", type:"topMarketTakeaways", typeLabel:"Top Market Takeaways", status:"published", isExternal:true, author:"Kriti Gupta", reviewer:"Madison Faller", team:"GIS", assetClass:"Multi-Asset", functionType:"Strategy", tags:["Fed","rates","equities","monetary policy","portfolio"], productTags:["SPY","TLT","GLD"], regions:["US","Global"], vertical:"", createdDate:"2026-04-28", publishedDate:"2026-04-29", expiryDate:"2026-06-29", lockedBy:null, lockedAt:null, views:1243, qScore:4.7, history:[{action:"created",by:"Kriti Gupta",at:"2026-04-28T09:00:00Z"},{action:"published",by:"Madison Faller",at:"2026-04-29T08:00:00Z"}], sections:[{id:"hook",title:"Opening Paragraph",content:"For 15 years, investors learned a simple rule: when markets fall, the Fed will cut. That rule - the Fed Put - may no longer be operative. Portfolios built around that assumption are more vulnerable than their owners realise."},{id:"thekey",title:"The Key",content:"The Fed can only cut if inflation is contained. With core services inflation still running above 3%, the central bank's hands are tied in a way they were not in 2019, 2020, or 2022."},{id:"section2",title:"The Changed Calculus",content:"In every equity drawdown since 2009, the Fed's response function provided a floor. That assumption is now in doubt - and if it breaks, the valuation framework for equities needs to be reset."},{id:"close",title:"Portfolio Implications",content:"Own genuine hedges. Gold outperforms in stagflation. Short duration protects capital. Quality equities with pricing power outperform in higher-for-longer environments."}]},
 ]);
 
   // Workflow actions
@@ -7823,6 +8018,48 @@ ${sectionsText}`;
   const [isGeneratingWhatsMoving, setIsGeneratingWhatsMoving] = useState(false);
   const [generateError, setGenerateError] = useState('');
   
+  // Forward Look → Create content
+  const handleForwardLookCreate = async (event, autoGenerate = false) => {
+    const ticker = event.ticker || '';
+    const date = new Date(event.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+    const preTitle = ticker
+      ? `${ticker}: ${event.title.replace(ticker, '').trim()} — ${date}`
+      : `${event.title} — ${date}`;
+
+    // REPLACE (not merge) the deskCommentary template content
+    const freshContent = {
+      title: preTitle,
+      productTags: ticker ? [ticker] : [],
+      isExternal: false,
+      _source: 'forwardlook',
+      _eventRef: event.title,
+      sections: [{
+        id: 'headline',
+        title: 'Headline View',
+        content: [
+          event.consensus ? `Consensus: ${event.consensus}.` : '',
+          event.lastResult ? `Last result: ${event.lastResult}.` : '',
+          event.jpmView ? `JPM View: ${event.jpmView}` : '',
+        ].filter(Boolean).join(' ')
+      }]
+    };
+
+    // Direct state replacement — not merge
+    setTemplateContents(prev => ({ ...prev, deskCommentary: freshContent }));
+    setActiveTeam('gis');
+    setActiveTemplate('deskCommentary');
+    setEditingFromLibrary(true);
+    setEditingItemId(null);
+    setActiveTab('editor');
+    setSaveStatus('unsaved');
+
+    if (autoGenerate) {
+      setTimeout(() => { generateWhatsMoving(); }, 700);
+    }
+  };
+
+  // Forward Look → Create content
+
   const fetchMarketData = async (region, indices, onContentChange, currentContent) => {
     const apiKey = localStorage.getItem('_ak');
     if (!apiKey) { alert('Set your API key first (⚠ button in header)'); return; }
@@ -8733,7 +8970,7 @@ ${sectionsText}`;
 
         {/* CODEBASE TAB */}
         {activeTab === 'codebase' && <CodebaseViewer />}
-        {activeTab === 'forwardlook' && <ForwardLookTab />}
+        {activeTab === 'forwardlook' && <ForwardLookTab onCreateContent={handleForwardLookCreate} />}
         {activeTab === 'about' && <AboutTab />}
         {activeTab !== 'editor' && activeTab !== 'content' && activeTab !== 'codebase' && (
           activeTab === 'workflow' ? <WorkflowTab items={filteredItems} onStatusChange={(id, s) => setLibraryItems(prev => prev.map(item => item.id===id ? {...item, status:s} : item))} /> :
