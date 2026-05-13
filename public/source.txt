@@ -1111,6 +1111,24 @@ const AIDraftingPanel = ({ isOpen, onClose, templateName, templateId, content, o
   const [draftContent, setDraftContent] = useState(null);
   const [error, setError] = useState(null);
   const [generationStep, setGenerationStep] = useState('');
+  const [aiSources, setAiSources] = useState(['full-web']);
+  const [aiStreetFirms, setAiStreetFirms] = useState([]);
+
+  const AI_SOURCES = [
+    { id: 'full-web', label: 'Full Web', icon: '🌐' },
+    { id: 'trusted-web', label: 'Trusted Web', icon: '✅', desc: 'FT, Bloomberg, Reuters, WSJ' },
+    { id: 'jpm-ib', label: 'JPM IB Research', icon: '🏦' },
+    { id: 'jpm-pb', label: 'JPM Private Bank', icon: '🔒' },
+    { id: 'street-views', label: 'Street Views', icon: '📊' },
+  ];
+  const STREET_FIRMS = ['Goldman Sachs', 'Morgan Stanley', 'UBS', 'Citi', 'Deutsche Bank', 'BofA', 'Barclays'];
+
+  const getSourceContext = () => [
+    aiSources.includes('trusted-web') ? 'Draw on Financial Times, Bloomberg, Reuters, Wall Street Journal and Economist sources.' : '',
+    aiSources.includes('jpm-ib') ? 'Reference JPMorgan Investment Bank research perspectives where relevant.' : '',
+    aiSources.includes('jpm-pb') ? 'Reference J.P. Morgan Private Bank GIS positioning and published views.' : '',
+    aiSources.includes('street-views') && aiStreetFirms.length > 0 ? `Consider and reference views from: ${aiStreetFirms.join(', ')}.` : '',
+  ].filter(Boolean).join(' ');
 
   const getSystemPrompt = () => {
     if (isMacro) return "You are a senior J.P. Morgan Private Bank Economy & Markets writer. Calm, measured, intellectually confident. Polished essay. Return only XML.";
@@ -1224,10 +1242,15 @@ ${getXmlStructure()}`;
     setDraftContent(null);
     setGenerationStep(isMacro ? 'Building research piece...' : 'Generating draft...');
     try {
-      const maxTokens = isMacro ? 5000 : 1000;
+      const maxTokens = isMacro ? 16000 : 4000;
       const model = isMacro ? 'claude-sonnet-4-20250514' : 'claude-haiku-4-5-20251001';
       const userPrompt = isMacro ? buildMacroPrompt() : buildStandardPrompt();
-      const raw = await callClaude({ model, max_tokens: maxTokens, system: getSystemPrompt(), messages: [{ role: 'user', content: userPrompt }] });
+      const sourceCtx = getSourceContext();
+      const systemWithSources = sourceCtx
+        ? getSystemPrompt() + ` Source context: ${sourceCtx}`
+        : getSystemPrompt();
+      const useWebSearch = aiSources.includes('full-web') || aiSources.includes('trusted-web');
+      const raw = await callClaude({ model, max_tokens: maxTokens, system: systemWithSources, tools: useWebSearch ? [{ type: 'web_search_20250305', name: 'web_search' }] : undefined, messages: [{ role: 'user', content: userPrompt }] });
       setGenerationStep('Parsing...');
       // raw is already text from callClaude
       if (!raw) { setError('No response from API.'); return; }
@@ -1379,6 +1402,29 @@ ${getXmlStructure()}`;
               </>
             )}
             
+            {/* Source selector */}
+            <div style={{ marginTop: 14, padding: '12px 14px', background: '#fff', borderRadius: 8, border: '1px solid ' + c.pearl }}>
+              <div style={{ fontSize: 9, fontWeight: 700, color: c.slate, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>Sources</div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: aiSources.includes('street-views') ? 8 : 0 }}>
+                {AI_SOURCES.map(s => (
+                  <button key={s.id} onClick={() => setAiSources(prev => prev.includes(s.id) ? prev.filter(x => x !== s.id) : [...prev, s.id])}
+                    style={{ padding: '4px 9px', borderRadius: 12, border: '1px solid ' + (aiSources.includes(s.id) ? '#6B5B95' : c.pearl), background: aiSources.includes(s.id) ? '#F5F3FF' : '#fff', color: aiSources.includes(s.id) ? '#6B5B95' : c.slate, fontSize: 10, fontWeight: aiSources.includes(s.id) ? 700 : 400, cursor: 'pointer' }}>
+                    {s.icon} {s.label}
+                  </button>
+                ))}
+              </div>
+              {aiSources.includes('street-views') && (
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, paddingTop: 6, borderTop: '1px solid ' + c.pearl }}>
+                  {STREET_FIRMS.map(firm => (
+                    <button key={firm} onClick={() => setAiStreetFirms(prev => prev.includes(firm) ? prev.filter(f => f !== firm) : [...prev, firm])}
+                      style={{ padding: '3px 8px', borderRadius: 10, border: '1px solid ' + (aiStreetFirms.includes(firm) ? '#2563EB' : c.pearl), background: aiStreetFirms.includes(firm) ? '#EFF6FF' : '#fff', color: aiStreetFirms.includes(firm) ? '#2563EB' : c.slate, fontSize: 9, fontWeight: aiStreetFirms.includes(firm) ? 700 : 400, cursor: 'pointer' }}>
+                      {firm}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
             <button onClick={handleGenerate} disabled={isGenerating || !(isMacro ? macroThesis.trim() : bullets.trim())}
               style={{ marginTop: 14, padding: '12px 20px', borderRadius: 8, border: 'none', background: isMacro ? c.gold : c.teal, color: '#fff', fontSize: 12, fontWeight: 600, cursor: 'pointer', opacity: (isGenerating || !(isMacro ? macroThesis.trim() : bullets.trim())) ? 0.6 : 1 }}>
               {isGenerating ? (isMacro ? '🔬 Writing research piece...' : '✨ Generating...') : (isMacro ? '🔬 Generate Research Draft' : '✨ Generate Draft')}
@@ -2648,9 +2694,9 @@ const OutputPreviewPanel = ({ isOpen, onClose, templateName, templateId, content
 
       </div>
 
-      {articleContent?.externalLink && (
+      {c_content?.externalLink && (
         <div style={{ marginTop: 24, padding: '12px 0', borderTop: '1px solid ' + jpm.pearl, textAlign: 'center' }}>
-          <a href={articleContent.externalLink} target="_blank" rel="noopener noreferrer"
+          <a href={c_content.externalLink} target="_blank" rel="noopener noreferrer"
             style={{ fontSize: 12, color: jpm.gold, fontWeight: 600, textDecoration: 'none' }}>
             ↗ Read on Nexus · J.P. Morgan Private Bank
           </a>
@@ -2751,7 +2797,7 @@ const OutputPreviewPanel = ({ isOpen, onClose, templateName, templateId, content
                 {device === 'email'
                   ? <EmailPreviewContent c_content={c_content} templateName={templateName} metadata={m} />
                   : device === 'pdf'
-                  ? <ArticleContent isMobile={false} isEmail={false} isPDF={true} c_content={c_content} />
+                  ? <ArticleContent isMobile={false} isEmail={false} isPDF={true} />
                   : templateId === 'videoPublish'
                   ? <VideoArticleContent isMobile={isMobile} />
                   : templateId === 'eventResponse'
@@ -2762,7 +2808,7 @@ const OutputPreviewPanel = ({ isOpen, onClose, templateName, templateId, content
                   ? <MorningMeetingContent isMobile={isMobile} />
                   : templateId === 'dailyMarketUpdate'
                   ? <DailyMarketUpdateContent isMobile={isMobile} c_content={c_content} formatText={formatText} JPMDisclaimer={JPMDisclaimer} />
-                  : <ArticleContent isMobile={isMobile} isEmail={false} isPDF={false} c_content={c_content} />
+                  : <ArticleContent isMobile={isMobile} isEmail={false} isPDF={false} />
                 }
               </div>
             </div>
@@ -7219,9 +7265,121 @@ const ForwardLookTab = ({ onCreateContent: handleCreateFromEvent }) => {
 };
 
 
+
+const AddImplementationCard = ({ viewId, onAdd }) => {
+  const [open, setOpen] = React.useState(false);
+  const [form, setForm] = React.useState({ type: 'Direct Equity', status: 'Active', desk: 'Investment Solutions', detail: '' });
+  const IMPL_TYPES = ['Direct Equity', 'Derivatives', 'Fund', 'Structured Product', 'Direct (Bonds)', 'Currency Overlay'];
+  const DESKS = ['Investment Solutions', 'Derivatives', 'Product Solutions', 'Banking', 'GIS'];
+  const STATUSES = ['Active', 'Reviewing', 'Available', 'Closed'];
+
+  const submit = () => {
+    if (!form.detail.trim()) return;
+    onAdd({ id: 'i' + Date.now(), ...form });
+    setForm({ type: 'Direct Equity', status: 'Active', desk: 'Investment Solutions', detail: '' });
+    setOpen(false);
+  };
+
+  if (!open) return (
+    <div onClick={() => setOpen(true)}
+      style={{ background: c.ivory, border: '2px dashed ' + c.pearl, borderRadius: 10, padding: '14px 16px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: c.slate, fontSize: 12, cursor: 'pointer', minHeight: 80, gap: 6 }}>
+      <span style={{ fontSize: 18 }}>+</span> Add Implementation
+    </div>
+  );
+
+  return (
+    <div style={{ background: '#fff', border: '2px solid ' + c.teal, borderRadius: 10, padding: '14px 16px' }}>
+      <div style={{ fontSize: 12, fontWeight: 700, color: c.navy, marginBottom: 12 }}>New Implementation</div>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 10 }}>
+        <div>
+          <label style={{ fontSize: 9, color: c.slate, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 3 }}>Type</label>
+          <select value={form.type} onChange={e => setForm(p => ({...p, type: e.target.value}))} style={{ width: '100%', padding: '6px 8px', borderRadius: 5, border: '1px solid ' + c.pearl, fontSize: 11 }}>
+            {IMPL_TYPES.map(t => <option key={t}>{t}</option>)}
+          </select>
+        </div>
+        <div>
+          <label style={{ fontSize: 9, color: c.slate, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 3 }}>Desk</label>
+          <select value={form.desk} onChange={e => setForm(p => ({...p, desk: e.target.value}))} style={{ width: '100%', padding: '6px 8px', borderRadius: 5, border: '1px solid ' + c.pearl, fontSize: 11 }}>
+            {DESKS.map(d => <option key={d}>{d}</option>)}
+          </select>
+        </div>
+        <div>
+          <label style={{ fontSize: 9, color: c.slate, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 3 }}>Status</label>
+          <select value={form.status} onChange={e => setForm(p => ({...p, status: e.target.value}))} style={{ width: '100%', padding: '6px 8px', borderRadius: 5, border: '1px solid ' + c.pearl, fontSize: 11 }}>
+            {STATUSES.map(s => <option key={s}>{s}</option>)}
+          </select>
+        </div>
+      </div>
+      <textarea value={form.detail} onChange={e => setForm(p => ({...p, detail: e.target.value}))}
+        placeholder="Describe the implementation — entry, sizing, instrument, rationale, desk notes..."
+        rows={3} style={{ width: '100%', padding: '8px 10px', borderRadius: 6, border: '1px solid ' + c.pearl, fontSize: 12, lineHeight: 1.5, resize: 'vertical', outline: 'none', boxSizing: 'border-box', fontFamily: 'inherit', marginBottom: 10 }} />
+      <div style={{ display: 'flex', gap: 8 }}>
+        <button onClick={submit} style={{ padding: '7px 16px', borderRadius: 5, border: 'none', background: c.navy, color: '#fff', fontSize: 11, fontWeight: 600, cursor: 'pointer' }}>Add</button>
+        <button onClick={() => setOpen(false)} style={{ padding: '7px 16px', borderRadius: 5, border: '1px solid ' + c.pearl, background: '#fff', color: c.slate, fontSize: 11, cursor: 'pointer' }}>Cancel</button>
+      </div>
+    </div>
+  );
+};
+
 // ── VIEWS & IMPLEMENTATIONS TAB ──────────────────────────────────────────────
-const ViewsTab = () => {
+const ViewsTab = ({ libraryItems = [] }) => {
   const [views, setViews] = React.useState([
+    {
+      id: 'vg1', name: 'Gold', ticker: 'GLD', sector: 'Commodities', conviction: 'High',
+      gisView: 'Gold is a core holding in our portfolios. It has surged 130% over the past three years and we continue to see it as the pre-eminent geopolitical hedge. Rising government debt concerns, dollar weakness, and persistent inflation are structural tailwinds. The Strait of Hormuz closure and energy shock have only reinforced the case. We would not reduce on strength — this is ballast, not a trade.',
+      createdDate: '2026-05-12', author: 'Grace Peters',
+      implementations: [
+        { id: 'ig1', type: 'Fund', status: 'Active', desk: 'Product Solutions', detail: 'Gold ETF (GLD/SGOL). Target 3-5% of portfolio. Held as strategic ballast, not tactical position. Do not trade around it.' },
+        { id: 'ig2', type: 'Structured Product', status: 'Available', desk: 'Banking', detail: 'Gold-linked note available: 100% capital protection, 80% participation on spot gold upside. 2-year tenor. Minimum $500k. For clients uncomfortable with commodity volatility.' },
+        { id: 'ig3', type: 'Direct Equity', status: 'Reviewing', desk: 'Investment Solutions', detail: 'Gold miners (GDX) as leveraged expression — 1.5-2x operational leverage to gold price. Higher volatility but meaningful outperformance in sustained gold rallies. Maximum 1.5% of portfolio.' },
+      ]
+    },
+    {
+      id: 'vg2', name: 'Real Assets / Infrastructure', ticker: '', sector: 'Alternatives', conviction: 'High',
+      gisView: 'Infrastructure is the most underowned asset class in UHNW portfolios relative to the opportunity. Commodity-linked equities, global infrastructure, and real estate offer inflation-resilient cash flows and have historically delivered 8-12% annualised returns across different inflation regimes. Nearly 80% of family offices surveyed have no infrastructure exposure despite expressing concern about inflation. We are raising our infrastructure allocation.',
+      createdDate: '2026-05-12', author: 'Stephen Parker',
+      implementations: [
+        { id: 'ii1', type: 'Fund', status: 'Active', desk: 'Product Solutions', detail: 'Global Infrastructure Fund — core holding. Long-dated inflation-linked cash flows. Target 5-8% of portfolio for clients with long investment horizons.' },
+        { id: 'ii2', type: 'Fund', status: 'Active', desk: 'Product Solutions', detail: 'Commodity-linked equity fund — natural resource equities. Particularly relevant post-Hormuz shock. Oil majors, mining, agri. 2-4% allocation.' },
+        { id: 'ii3', type: 'Direct (Bonds)', status: 'Available', desk: 'Investment Solutions', detail: 'Infrastructure bonds (investment grade): direct exposure to airport, toll road, utility issuers. 4.8-5.4% yields available. 5-10 year maturities.' },
+      ]
+    },
+    {
+      id: 'vg3', name: 'AI Revolution — Infrastructure Layer', ticker: 'NVDA', sector: 'Technology', conviction: 'High',
+      gisView: 'JPM GIS positions for the AI revolution as its highest-conviction secular theme. 75% of S&P 500 gains, 80% of earnings, and 90% of capital spending growth since 2022 has been AI-related. The infrastructure layer — NVIDIA, Microsoft Azure, Amazon AWS — is where we have highest conviction. We are early-to-mid cycle, not late. The Blackwell ramp and hyperscaler capex revisions confirm this.',
+      createdDate: '2026-03-01', author: 'Stephen Parker',
+      implementations: [
+        { id: 'iai1', type: 'Direct Equity', status: 'Active', desk: 'Investment Solutions', detail: 'NVDA (primary), MSFT (secondary), AMZN (tertiary). Combined 5-8% of portfolio. NVDA as infrastructure play, not AI hype play.' },
+        { id: 'iai2', type: 'Fund', status: 'Active', desk: 'Product Solutions', detail: 'Global Technology Leaders Fund — concentrated AI infrastructure exposure. 6-8% of portfolio target.' },
+        { id: 'iai3', type: 'Derivatives', status: 'Reviewing', desk: 'Derivatives', detail: 'Long-dated call spreads (18-24 month) on the Philadelphia Semiconductor Index (SOX). Captures AI hardware cycle upside with defined risk.' },
+      ]
+    },
+    {
+      id: 'vg4', name: 'Eli Lilly', ticker: 'LLY', sector: 'Healthcare', conviction: 'High',
+      gisView: 'Eli Lilly is our highest-conviction healthcare name. Mounjaro and Zepbound are delivering GLP-1 revenue growth that is compounding faster than any drug franchise in pharmaceutical history. The obesity market is a $150Bn+ opportunity and Lilly has the manufacturing scale, clinical pipeline, and IP protection to dominate it. We expect the stock to re-rate as earnings revisions accelerate.',
+      createdDate: '2026-04-10', author: 'Kriti Gupta',
+      implementations: [
+        { id: 'il1', type: 'Direct Equity', status: 'Active', desk: 'Investment Solutions', detail: 'Overweight. Target 2-3% of portfolio. Long-dated investment — hold through near-term reimbursement volatility.' },
+        { id: 'il2', type: 'Fund', status: 'Reviewing', desk: 'Product Solutions', detail: 'Healthcare Innovation Fund — LLY is top holding at 7.8% weight. Alternative to direct equity for clients wanting sector diversification.' },
+      ]
+    },
+    {
+      id: 'vg5', name: 'Visa', ticker: 'V', sector: 'Financials', conviction: 'Medium',
+      gisView: 'Visa is a toll booth on global commerce — volume-driven, capital-light, with 50%+ operating margins. Cross-border transaction revenue is growing at 14% annually as global travel recovers. The stock is not cheap but the quality of earnings warrants a premium. We hold a modest overweight.',
+      createdDate: '2026-02-20', author: 'Erik Wytenus',
+      implementations: [
+        { id: 'iv1', type: 'Direct Equity', status: 'Active', desk: 'Investment Solutions', detail: 'Overweight. 1.5-2.5% of portfolio. Core quality holding.' },
+      ]
+    },
+    {
+      id: 'vg6', name: 'Semiconductors — Capital Equipment', ticker: 'AMAT', sector: 'Technology', conviction: 'Medium',
+      gisView: 'Semiconductor capital equipment is the second-order AI play. As TSMC and Intel build out AI chip fabs, Applied Materials, Lam Research, and ASML are the picks-and-shovels beneficiaries. Crucially, the Mid-Year Outlook highlights the semiconductor supply chain — concentrated in Taiwan — as an even greater geopolitical risk than the oil market. This creates both risk and opportunity.',
+      createdDate: '2026-05-10', author: 'Kriti Gupta',
+      implementations: [
+        { id: 'ise1', type: 'Direct Equity', status: 'Reviewing', desk: 'Investment Solutions', detail: 'Basket of AMAT, LRCX, ASML. 1-2% combined. Secondary AI expression with lower valuation risk than NVDA at current levels.' },
+        { id: 'ise2', type: 'Derivatives', status: 'Available', desk: 'Derivatives', detail: 'Geopolitical tail hedge via Taiwan semiconductor exposure — put spread on TSMC-heavy ETFs. Cost ~0.8% per annum.' },
+      ]
+    },
     {
       id: 'v1', name: 'Ferrari', ticker: 'RACE', sector: 'Consumer Discretionary', conviction: 'High',
       gisView: 'Ferrari is the most defensible luxury brand in the world. Its pricing power is structural — not cyclical — and its order book stretches years into the future. We see the stock as a compounding engine with low sensitivity to macro conditions.',
@@ -7378,15 +7536,47 @@ const ViewsTab = () => {
                   <div style={{ fontSize: 12, lineHeight: 1.6, color: c.slate }}>{impl.detail}</div>
                 </div>
               ))}
-              {/* Add implementation placeholder */}
-              <div style={{ background: c.ivory, border: '2px dashed ' + c.pearl, borderRadius: 10, padding: '14px 16px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: c.slate, fontSize: 12, cursor: 'pointer', minHeight: 100 }}>
-                + Add Implementation
-              </div>
+              {/* Add implementation */}
+              <AddImplementationCard viewId={selectedView.id} onAdd={(impl) => {
+                setViews(prev => prev.map(v => v.id === selectedView.id ? { ...v, implementations: [...v.implementations, impl] } : v));
+                setSelectedView(prev => ({ ...prev, implementations: [...prev.implementations, impl] }));
+              }} />
             </div>
 
-            {/* Related content from library */}
-            <div style={{ fontSize: 12, fontWeight: 700, color: c.navy, marginBottom: 12 }}>Related GIS Content</div>
-            <div style={{ fontSize: 11, color: c.slate }}>Content featuring {selectedView.ticker || selectedView.name} will appear here once published.</div>
+            {/* Related content from library — live lookup */}
+            {(() => {
+              const ticker = selectedView.ticker;
+              const viewName = selectedView.name;
+              const relatedItems = libraryItems.filter(item =>
+                item.status === 'published' && (
+                  (ticker && (item.productTags || []).includes(ticker)) ||
+                  (item.tags || []).some(t => viewName.toLowerCase().includes(t.toLowerCase()) || t.toLowerCase().includes(viewName.toLowerCase().split(' ')[0])) ||
+                  (item.title || '').toLowerCase().includes((ticker || viewName).toLowerCase())
+                )
+              ).slice(0, 5);
+              return relatedItems.length > 0 ? (
+                <div>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: c.navy, marginBottom: 12 }}>Related GIS Content</div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 10 }}>
+                    {relatedItems.map(item => (
+                      <div key={item.id} style={{ background: '#fff', border: '1px solid ' + c.pearl, borderRadius: 8, padding: '12px 14px', borderLeft: '3px solid ' + c.gold }}>
+                        <div style={{ fontSize: 9, fontWeight: 700, color: c.gold, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>{item.typeLabel} · {item.publishedDate}</div>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: c.navy, lineHeight: 1.4, marginBottom: 6 }}>{item.title}</div>
+                        <div style={{ fontSize: 11, color: c.slate, lineHeight: 1.5 }}>{(item.sections?.[0]?.content || '').slice(0, 100)}...</div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 }}>
+                          <div style={{ display: 'flex', gap: 4 }}>
+                            {(item.productTags || []).slice(0, 3).map(t => (
+                              <span key={t} style={{ fontSize: 9, fontWeight: 700, color: c.teal, background: '#F0F9FF', padding: '2px 6px', borderRadius: 4 }}>{t}</span>
+                            ))}
+                          </div>
+                          {item.qScore && <span style={{ fontSize: 10, color: c.gold }}>★ {item.qScore.toFixed(1)}</span>}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : null;
+            })()}
           </div>
         ) : (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 200, color: c.slate, fontSize: 13 }}>Select a view from the left</div>
@@ -7999,6 +8189,9 @@ ${sectionsText}`;
     { id:23, title:"GIS View: May 2026 - Staying the Course on International", type:"gisView", typeLabel:"GIS View", status:"published", isExternal:true, author:"Madison Faller", reviewer:null, team:"GIS", assetClass:"Equities", functionType:"Strategy", tags:["GIS View","international equities","positioning","May 2026"], productTags:["EFA","VEA","IEFA"], regions:["Global"], vertical:"", createdDate:"2026-05-05", publishedDate:"2026-05-06", expiryDate:"2026-07-06", lockedBy:null, lockedAt:null, views:892, qScore:4.5, history:[{action:"created",by:"Madison Faller",at:"2026-05-05T09:00:00Z"},{action:"published",by:"Madison Faller",at:"2026-05-06T08:00:00Z"}], sections:[{id:"key",title:"Key Message",content:"We maintain our preference for international over US equities. The valuation gap between European and US equities remains at decade-wide levels."},{id:"context",title:"Context",content:"Since our January overweight, international equities have added approximately 8% of alpha relative to the S&P 500. The thesis is playing out."},{id:"view",title:"Our View",content:"The case is intact: better valuations, improving earnings momentum, and a weaker dollar tailwind. Any pullback in European equities is a buying opportunity."}]},
     { id:24, title:"Top Market Takeaways: The Fed Is Not Going to Save You This Time", type:"topMarketTakeaways", typeLabel:"Top Market Takeaways", status:"published", isExternal:true, author:"Kriti Gupta", reviewer:"Madison Faller", team:"GIS", assetClass:"Multi-Asset", functionType:"Strategy", tags:["Fed","rates","equities","monetary policy","portfolio"], productTags:["SPY","TLT","GLD"], regions:["US","Global"], vertical:"", createdDate:"2026-04-28", publishedDate:"2026-04-29", expiryDate:"2026-06-29", lockedBy:null, lockedAt:null, views:1243, qScore:4.7, history:[{action:"created",by:"Kriti Gupta",at:"2026-04-28T09:00:00Z"},{action:"published",by:"Madison Faller",at:"2026-04-29T08:00:00Z"}], sections:[{id:"hook",title:"Opening Paragraph",content:"For 15 years, investors learned a simple rule: when markets fall, the Fed will cut. That rule - the Fed Put - may no longer be operative. Portfolios built around that assumption are more vulnerable than their owners realise."},{id:"thekey",title:"The Key",content:"The Fed can only cut if inflation is contained. With core services inflation still running above 3%, the central bank's hands are tied in a way they were not in 2019, 2020, or 2022."},{id:"section2",title:"The Changed Calculus",content:"In every equity drawdown since 2009, the Fed's response function provided a floor. That assumption is now in doubt - and if it breaks, the valuation framework for equities needs to be reset."},{id:"close",title:"Portfolio Implications",content:"Own genuine hedges. Gold outperforms in stagflation. Short duration protects capital. Quality equities with pricing power outperform in higher-for-longer environments."}]},
     { id:26, title:"Centre for Geopolitics: Navigating Fragmentation", type:"macroMarkets", typeLabel:"Macro & Markets", status:"published", isExternal:true, author:"Erik Wytenus", reviewer:"Madison Faller", team:"GIS", assetClass:"Multi-Asset", functionType:"Strategy", tags:["geopolitics","fragmentation","multipolar","deglobalisation","risk","China","Russia","BRICS"], productTags:["GLD","TLT","EFA","VNQ"], regions:["Global"], vertical:"", createdDate:"2026-04-14", publishedDate:"2026-04-18", expiryDate:"2026-10-18", lockedBy:null, lockedAt:null, views:1432, qScore:4.7, tagline:"How the fracturing of the post-Cold War order is reshaping portfolio construction", history:[{action:"created",by:"Erik Wytenus",at:"2026-04-14T09:00:00Z"},{action:"published",by:"Madison Faller",at:"2026-04-18T08:00:00Z"}], sections:[{id:"opening",title:"The New Geopolitical Order",content:"The rules-based international order that governed trade, finance, and security for 30 years is fragmenting. Not collapsing - fragmenting. The distinction matters. A collapse would be a crisis. Fragmentation is something more insidious: a slow reorganisation of global relationships that reprices assets gradually, then suddenly."},{id:"analysis1",title:"What Fragmentation Actually Means for Markets",content:"Fragmentation does not mean de-globalisation. Global trade volumes remain near record highs. But the composition of trade is changing: more within blocs, less between them. Supply chains are being duplicated across geopolitical fault lines. This is expensive. The cost is borne by corporates first, then consumers, then equity valuations."},{id:"analysis2",title:"The Three Axes of Risk",content:"Three primary geopolitical axes drive portfolio risk in 2026: the US-China technology and trade relationship, the Russia-Europe energy and security realignment, and the emerging market multipolar realignment as countries hedge between the G7 and the BRICS-adjacent bloc. Each axis has distinct asset implications."},{id:"analysis3",title:"Portfolio Implications",content:"Geopolitical risk does not diversify well in traditional portfolios. Correlations between equities and bonds break down precisely when geopolitical shocks hit. Gold, real assets, infrastructure, and short-duration high-quality fixed income provide genuine geopolitical resilience."},{id:"conclusion",title:"Conclusion",content:"Position for a world of constrained globalisation, higher structural inflation, and periodic geopolitical shocks. Diversify away from over-concentration in US assets. Add real assets and gold. Extend the time horizon - geopolitical transitions take years, not quarters."}]},
+    { id:27, title:"NVDA Q1 FY2027: Beats on All Lines — Blackwell Ramp Accelerating", type:"deskCommentary", typeLabel:"Desk Commentary", status:"published", isExternal:false, author:"Kriti Gupta", reviewer:null, team:"GIS", assetClass:"Equities", functionType:"Strategy", tags:["NVIDIA","earnings","AI","semiconductors","beat","data centre"], productTags:["NVDA"], regions:["US"], vertical:"", createdDate:"2026-05-22", publishedDate:"2026-05-22", expiryDate:"2026-08-22", lockedBy:null, lockedAt:null, views:876, qScore:4.6, history:[{action:"created",by:"Kriti Gupta",at:"2026-05-22T22:00:00Z"},{action:"published",by:"Kriti Gupta",at:"2026-05-22T22:30:00Z"}], sections:[{id:"headline",title:"Headline View",content:"NVIDIA delivered another blowout quarter — revenue of $44.1Bn beat the $43.2Bn consensus by 2%, with data centre at $39.3Bn ahead of the $38.5Bn estimate. The Blackwell ramp is tracking ahead of our model. EPS of $0.96 beat $0.94e. Guidance of $45.5Bn for Q2 is above the $44.8Bn street estimate. Our view: the AI infrastructure buildout remains earlier cycle than consensus believes. We maintain our overweight. For clients with positions below 3% of portfolio, this earnings print supports adding on any weakness."}]},
+    { id:28, title:"Specialist Spotlight: NVIDIA — Why the Multiple Is Justified", type:"specialistSpotlight", typeLabel:"Specialist Spotlight", status:"published", isExternal:true, author:"Kriti Gupta", reviewer:"Madison Faller", team:"GIS", assetClass:"Equities", functionType:"Strategy", tags:["NVIDIA","AI","semiconductors","valuation","data centre","Blackwell"], productTags:["NVDA"], regions:["US"], vertical:"", createdDate:"2026-04-15", publishedDate:"2026-04-17", expiryDate:"2026-07-17", lockedBy:null, lockedAt:null, views:1102, qScore:4.7, history:[{action:"created",by:"Kriti Gupta",at:"2026-04-15T09:00:00Z"},{action:"published",by:"Madison Faller",at:"2026-04-17T08:00:00Z"}], sections:[{id:"lead",title:"The Lead",content:"At 35x forward earnings, NVIDIA trades at a significant premium to the market. The consensus view is that this is stretched. Our view is that it understates the durability and scale of the AI infrastructure supercycle."},{id:"view",title:"The View",content:"NVIDIA is not a cyclical semiconductor company being valued on a cyclical multiple. It is the dominant infrastructure provider for a generational technology transition. The appropriate comp is not Intel in 2000 — it is Cisco at the peak of the internet buildout, but with a far more defensible competitive position and no comparable market cap."},{id:"why_now",title:"Why Now",content:"The Blackwell architecture is ramping faster than our initial model. Hyperscaler capex guidance for 2026 has been revised up three times this year. China export controls are a risk, but demand from US, European, and Japanese hyperscalers is more than compensating."},{id:"takeaway",title:"Advisor Takeaway",content:"For clients without NVDA exposure: the entry point has become less attractive after the recent run, but a 1-2% position initiated on any 10%+ pullback remains our recommendation. For existing holders: hold, do not chase."}]},
+    { id:29, title:"Ideas & Insights: The AI Infrastructure Trade — Mid-Cycle, Not Late-Cycle", type:"ideasInsights", typeLabel:"Ideas & Insights", status:"published", isExternal:true, author:"Madison Faller", reviewer:"Erik Wytenus", team:"GIS", assetClass:"Equities", functionType:"Strategy", tags:["AI","infrastructure","NVIDIA","semiconductors","data centre","capex","mid-cycle"], productTags:["NVDA","MSFT","GOOGL","AMZN","AMD"], regions:["US","Global"], vertical:"", createdDate:"2026-03-10", publishedDate:"2026-03-14", expiryDate:"2026-09-14", lockedBy:null, lockedAt:null, views:2134, qScore:4.8, tagline:"The market is pricing in a late-cycle AI trade. The data suggests we are much earlier than that.", history:[{action:"created",by:"Madison Faller",at:"2026-03-10T09:00:00Z"},{action:"published",by:"Erik Wytenus",at:"2026-03-14T08:00:00Z"}], sections:[{id:"opportunity",title:"The Opportunity",content:"AI infrastructure spending is accelerating, not decelerating. Combined hyperscaler capex guidance for 2026 has been revised up $180Bn since January — a number larger than the entire global semiconductor market in 2010. The market is pricing AI as a late-cycle trade due for digestion. We believe it is mid-cycle at best, with the most capital-intensive phase still ahead."},{id:"data",title:"What the Data Shows",content:"Microsoft, Google, Amazon, and Meta have all raised 2026 capex guidance by 15-30% year-to-date. NVIDIA data centre revenue has compounded at 180% annually for six consecutive quarters. Enterprise AI adoption — the second wave after hyperscaler infrastructure — is only beginning. The GPU shortage is structural, not cyclical."},{id:"missing",title:"What the Market Is Missing",content:"Consensus is applying a late-cycle semiconductor framework to what is a generational infrastructure buildout. The correct framework is closer to the 1990s fibre and router buildout — extended, capital-intensive, with a dominant picks-and-shovels winner. NVIDIA is that winner. The digestion risk is real but overpriced."},{id:"jpmview",title:"The JPM View",content:"We are overweight AI infrastructure. Our primary expression is NVDA, supplemented by Microsoft (Azure AI monetisation) and selective semiconductor capital equipment exposure. We would add AMD as a secondary beneficiary. We avoid pure-play AI software at current valuations."},{id:"action",title:"What To Do",content:"Investors without AI infrastructure exposure should establish a position across NVDA (primary), MSFT (diversified), and one capital equipment name. Sizing: 4-6% of portfolio combined. Investors already positioned: hold, resist the temptation to take profits prematurely — the capex cycle has at least 2 more years to run."}]},
 ]);
 
   // Workflow actions
@@ -9360,7 +9553,7 @@ ${sectionsText}`;
         {activeTab === 'codebase' && <CodebaseViewer />}
         {activeTab === 'forwardlook' && <ForwardLookTab onCreateContent={handleForwardLookCreate} />}
         {activeTab === 'about' && <AboutTab />}
-        {activeTab === 'views' && <ViewsTab />}
+        {activeTab === 'views' && <ViewsTab libraryItems={libraryItems} />}
         {activeTab !== 'editor' && activeTab !== 'content' && activeTab !== 'codebase' && (
           activeTab === 'workflow' ? <WorkflowTab items={filteredItems} onStatusChange={(id, s) => setLibraryItems(prev => prev.map(item => item.id===id ? {...item, status:s} : item))} /> :
           activeTab === 'data' ? <DataTaxonomyTab items={libraryItems} mode="data" onUpdateTags={(id, tags) => setLibraryItems(prev => prev.map(item => item.id===id ? {...item, tags} : item))} /> :
