@@ -1647,9 +1647,9 @@ const VisualChartContent = ({ c_content, templateName }) => {
   };
 
   return (
-    <div style={{ fontFamily: 'Georgia, serif', width: '100%', minHeight: '100%', background: NAVY, color: '#fff', boxSizing: 'border-box' }}>
+    <div style={{ fontFamily: 'Arial, sans-serif', width: '100%', minHeight: '100%', background: '#fff', color: '#1A1A2F', boxSizing: 'border-box' }}>
       {/* Header */}
-      <div style={{ padding: '20px 40px', borderBottom: '1px solid rgba(193,163,100,0.3)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div style={{ padding: '20px 40px', borderBottom: '1px solid #E8E0D0', background: NAVY, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
           <div style={{ fontSize: 9, fontWeight: 700, color: GOLD, textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: 6 }}>J.P. Morgan Private Bank · Visual Story</div>
           <div style={{ fontSize: 22, fontWeight: 400, color: '#fff', lineHeight: 1.3 }}>{c_content.title || 'Untitled'}</div>
@@ -1657,31 +1657,31 @@ const VisualChartContent = ({ c_content, templateName }) => {
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
           {chartData && ['bar','line','area'].map(t => (
             <button key={t} onClick={() => setChartType(t)}
-              style={{ padding: '5px 10px', borderRadius: 4, border: '1px solid ' + (chartType===t ? GOLD : 'rgba(255,255,255,0.2)'), background: chartType===t ? GOLD : 'transparent', color: chartType===t ? NAVY : 'rgba(255,255,255,0.6)', fontSize: 10, cursor: 'pointer', fontWeight: 600 }}>
+              style={{ padding: '5px 10px', borderRadius: 4, border: '1px solid ' + (chartType===t ? GOLD : '#E8E0D0'), background: chartType===t ? GOLD : '#fff', color: chartType===t ? '#fff' : '#555', fontSize: 10, cursor: 'pointer', fontWeight: 600 }}>
               {t === 'bar' ? '▋ Bar' : t === 'line' ? '╱ Line' : '◱ Area'}
             </button>
           ))}
           <button onClick={generateChart} disabled={loading}
-            style={{ padding: '10px 22px', borderRadius: 6, border: '1px solid ' + GOLD, background: loading ? 'transparent' : GOLD, color: loading ? GOLD : NAVY, fontSize: 12, cursor: loading ? 'wait' : 'pointer', fontWeight: 700 }}>
+            style={{ padding: '10px 22px', borderRadius: 6, border: '1px solid ' + GOLD, background: loading ? '#fff' : GOLD, color: loading ? GOLD : '#fff', fontSize: 12, cursor: loading ? 'wait' : 'pointer', fontWeight: 700 }}>
             {loading ? '⏳' : chartData ? '↻ Regenerate' : '✨ Generate Visual Story'}
           </button>
         </div>
       </div>
 
-      {error && <div style={{ margin: '16px 40px', padding: '10px 14px', background: 'rgba(220,38,38,0.1)', border: '1px solid rgba(220,38,38,0.3)', borderRadius: 6, color: '#FCA5A5', fontSize: 12 }}>{error}</div>}
+      {error && <div style={{ margin: '16px 40px', padding: '10px 14px', background: '#FFF1F1', border: '1px solid #FECACA', borderRadius: 6, color: '#DC2626', fontSize: 12 }}>{error}</div>}
 
       {!chartData && !loading && (
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '80px 40px', textAlign: 'center' }}>
           <div style={{ fontSize: 48, marginBottom: 20, opacity: 0.4 }}>📊</div>
-          <div style={{ fontSize: 18, color: 'rgba(255,255,255,0.7)', marginBottom: 8 }}>Generate a visual story from your content</div>
-          <div style={{ fontSize: 13, color: 'rgba(193,163,100,0.6)', maxWidth: 360 }}>The AI reads your written piece and extracts the key quantitative story, then renders it as an interactive chart</div>
+          <div style={{ fontSize: 18, color: '#555', marginBottom: 8 }}>Generate a visual story from your content</div>
+          <div style={{ fontSize: 13, color: '#aaa', maxWidth: 360 }}>The AI reads your written piece and extracts the key quantitative story, then renders it as an interactive chart</div>
         </div>
       )}
 
       {loading && (
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '80px 40px', textAlign: 'center' }}>
           <div style={{ fontSize: 36, marginBottom: 16, animation: 'spin 1s linear infinite' }}>⏳</div>
-          <div style={{ fontSize: 16, color: 'rgba(255,255,255,0.7)' }}>Reading your content and building the visual...</div>
+          <div style={{ fontSize: 16, color: '#555' }}>Reading your content and building the visual...</div>
         </div>
       )}
 
@@ -1689,30 +1689,30 @@ const VisualChartContent = ({ c_content, templateName }) => {
         <div style={{ padding: '32px 40px' }}>
           {/* Chart title and subtitle */}
           <div style={{ marginBottom: 24 }}>
-            <div style={{ fontSize: 18, fontWeight: 400, color: '#fff', marginBottom: 6 }}>{chartData.title}</div>
-            <div style={{ fontSize: 13, color: GOLD, letterSpacing: '0.04em' }}>{chartData.subtitle}</div>
+            <div style={{ fontSize: 18, fontWeight: 400, color: NAVY, marginBottom: 6 }}>{chartData.title}</div>
+            <div style={{ fontSize: 13, color: '#888', letterSpacing: '0.04em' }}>{chartData.subtitle}</div>
           </div>
           {/* Chart */}
-          <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(193,163,100,0.2)', borderRadius: 12, padding: '24px 8px 8px', marginBottom: 20 }}>
+          <div style={{ background: '#FAFAFA', border: '1px solid #E8E0D0', borderRadius: 12, padding: '24px 8px 8px', marginBottom: 20 }}>
             <ResponsiveContainer width="100%" height={360}>
               {renderChart()}
             </ResponsiveContainer>
           </div>
           {/* Source + insight */}
-          {chartData.source && <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', marginBottom: 12 }}>Source: {chartData.source}</div>}
+          {chartData.source && <div style={{ fontSize: 10, color: '#aaa', marginBottom: 12 }}>Source: {chartData.source}</div>}
           {chartData.insight && (
-            <div style={{ background: 'rgba(193,163,100,0.1)', borderLeft: '3px solid ' + GOLD, borderRadius: '0 8px 8px 0', padding: '12px 16px', fontSize: 14, color: '#fff', fontStyle: 'italic', lineHeight: 1.6 }}>
+            <div style={{ background: '#FFF9EE', borderLeft: '3px solid ' + GOLD, borderRadius: '0 8px 8px 0', padding: '12px 16px', fontSize: 14, color: NAVY, fontStyle: 'italic', lineHeight: 1.6 }}>
               💡 {chartData.insight}
             </div>
           )}
           {/* Actions */}
           <div style={{ display: 'flex', gap: 10, marginTop: 20 }}>
             <button onClick={() => { navigator.clipboard?.writeText(JSON.stringify(chartData, null, 2)); }}
-              style={{ padding: '8px 16px', borderRadius: 6, border: '1px solid rgba(193,163,100,0.4)', background: 'transparent', color: GOLD, fontSize: 11, cursor: 'pointer', fontWeight: 600 }}>
+              style={{ padding: '8px 16px', borderRadius: 6, border: '1px solid ' + GOLD, background: '#fff', color: GOLD, fontSize: 11, cursor: 'pointer', fontWeight: 600 }}>
               📋 Copy Data
             </button>
             <button onClick={() => { const el = document.querySelector('[data-chart-export]'); alert('Export: connect to html2canvas or svg export library'); }}
-              style={{ padding: '8px 16px', borderRadius: 6, border: '1px solid rgba(255,255,255,0.2)', background: 'transparent', color: 'rgba(255,255,255,0.6)', fontSize: 11, cursor: 'pointer', fontWeight: 600 }}>
+              style={{ padding: '8px 16px', borderRadius: 6, border: '1px solid #E8E0D0', background: '#fff', color: '#555', fontSize: 11, cursor: 'pointer', fontWeight: 600 }}>
               ⬇ Export PNG
             </button>
           </div>
@@ -2687,26 +2687,7 @@ const OutputPreviewPanel = ({ isOpen, onClose, templateName, templateId, content
               ))}
             </div>
 
-            {/* Format Switcher */}
-            <div style={{ display: 'flex', background: '#333', borderRadius: 6, padding: 2 }}>
-              {formats.map(f => (
-                <button 
-                  key={f.id}
-                  onClick={() => setFormat(f.id)}
-                  style={{ 
-                    padding: '6px 14px', 
-                    borderRadius: 4, 
-                    border: 'none', 
-                    background: format === f.id ? c.gold : 'transparent', 
-                    color: format === f.id ? '#fff' : '#888', 
-                    fontSize: 11, 
-                    cursor: 'pointer'
-                  }}
-                >
-                  {f.label}
-                </button>
-              ))}
-            </div>
+
           </div>
           <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#666', fontSize: 24, cursor: 'pointer', padding: 4 }}>×</button>
         </div>
@@ -2717,7 +2698,7 @@ const OutputPreviewPanel = ({ isOpen, onClose, templateName, templateId, content
             <WhatsAppPreviewContent c_content={c_content} templateName={templateName} />
           </div>
         ) : device === 'chart' ? (
-          <div style={{ flex: 1, overflow: 'auto', background: '#1a1a1a', display: 'flex', flexDirection: 'column' }}>
+          <div style={{ flex: 1, overflow: 'auto', background: '#F7F4EF', display: 'flex', flexDirection: 'column' }}>
             <VisualChartContent c_content={c_content} templateName={templateName} />
           </div>
         ) : (
@@ -2755,7 +2736,7 @@ const OutputPreviewPanel = ({ isOpen, onClose, templateName, templateId, content
                 </div>
               )}
               {/* Content */}
-              <div style={{ padding: isMobile ? 24 : 56, maxWidth: format === 'pdf' ? 680 : 'none', margin: format === 'pdf' ? '0 auto' : 0 }}>
+              <div style={{ padding: isMobile ? 24 : '32px 48px', maxWidth: format === 'pdf' ? 900 : 'none', margin: format === 'pdf' ? '0 auto' : 0 }}>
                 {device === 'email'
                   ? <EmailPreviewContent c_content={c_content} templateName={templateName} metadata={m} />
                   : device === 'pdf'
@@ -4350,11 +4331,52 @@ const ClientExposurePanel = ({ ticker, onClose }) => {
   );
 };
 
-const PlaygroundTemplate = ({ content, onContentChange }) => {
+const PlaygroundTemplate = ({ content, onContentChange, onCreateFromPlayground }) => {
   const c_content = content || {};
   const [isChallenging, setIsChallenging] = React.useState(false);
   const [challenges, setChallenges] = React.useState(c_content.challenges || []);
-  const [history, setHistory] = React.useState(c_content.history || []);
+  const [selectedSources, setSelectedSources] = React.useState(c_content.selectedSources || ['full-web']);
+  const [streetViewFirms, setStreetViewFirms] = React.useState(c_content.streetViewFirms || []);
+  const [showStreetFirms, setShowStreetFirms] = React.useState(false);
+
+  const SOURCES = [
+    { id: 'full-web', label: 'Full Web', icon: '🌐', desc: 'Broad internet sources' },
+    { id: 'trusted-web', label: 'Trusted Web', icon: '✅', desc: 'FT, Bloomberg, Reuters, WSJ, Economist' },
+    { id: 'jpm-ib', label: 'JPM Investment Bank', icon: '🏦', desc: 'JPMorgan IB research & reports' },
+    { id: 'jpm-pb', label: 'JPM Private Bank', icon: '🔒', desc: 'GIS publications & internal views' },
+    { id: 'street-views', label: 'Street Views', icon: '📊', desc: 'Competitor research & views', hasChildren: true },
+  ];
+
+  const STREET_FIRMS = ['Goldman Sachs', 'Morgan Stanley', 'UBS', 'Citi', 'Deutsche Bank', 'BofA', 'Barclays', 'HSBC'];
+
+  const toggleSource = (id) => {
+    const updated = selectedSources.includes(id)
+      ? selectedSources.filter(s => s !== id)
+      : [...selectedSources, id];
+    setSelectedSources(updated);
+    onContentChange && onContentChange({ ...c_content, selectedSources: updated });
+    if (id === 'street-views') setShowStreetFirms(!selectedSources.includes(id));
+  };
+
+  const toggleFirm = (firm) => {
+    const updated = streetViewFirms.includes(firm)
+      ? streetViewFirms.filter(f => f !== firm)
+      : [...streetViewFirms, firm];
+    setStreetViewFirms(updated);
+    onContentChange && onContentChange({ ...c_content, streetViewFirms: updated });
+  };
+
+  const wordCount = (c_content.freeform || '').split(/\s+/).filter(Boolean).length;
+
+  // Suggest template based on word count and content
+  const suggestTemplate = () => {
+    if (wordCount < 50) return null;
+    if (wordCount > 400) return { id: 'macroMarkets', name: 'Macro & Markets', reason: 'deep enough for a full essay', highlight: true };
+    if (wordCount > 150) return { id: 'ideasInsights', name: 'Ideas & Insights', reason: 'great depth for a deep-dive', highlight: true };
+    if (wordCount > 50) return { id: 'topMarketTakeaways', name: 'Top Market Takeaways', reason: 'good for a punchy op-ed', highlight: false };
+    return null;
+  };
+  const suggestion = suggestTemplate();
 
   const challengeThinking = async () => {
     const text = c_content.freeform || '';
@@ -4362,85 +4384,184 @@ const PlaygroundTemplate = ({ content, onContentChange }) => {
     const apiKey = localStorage.getItem('_ak');
     if (!apiKey) { alert('Set your API key first'); return; }
     setIsChallenging(true);
+
+    const sourceContext = [
+      selectedSources.includes('trusted-web') ? 'Draw on FT, Bloomberg, Reuters, WSJ and Economist sources.' : '',
+      selectedSources.includes('jpm-ib') ? 'Reference JPMorgan Investment Bank research perspectives.' : '',
+      selectedSources.includes('jpm-pb') ? 'Reference J.P. Morgan Private Bank GIS positioning.' : '',
+      selectedSources.includes('street-views') && streetViewFirms.length > 0 ? `Consider views from: ${streetViewFirms.join(', ')}.` : '',
+    ].filter(Boolean).join(' ');
+
     try {
       const resp = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
         body: JSON.stringify({
           model: 'claude-sonnet-4-20250514', max_tokens: 1000,
-          system: `You are a senior external research counterpart — think a senior economist at a rival institution, a seasoned macro PM, or a well-regarded sell-side strategist. You are reviewing an investment idea in progress. Your job is to:
-1. Challenge the key assumptions — what is being taken for granted?
-2. Add context and data the author may have missed
-3. Suggest angles, complications, or risks that would strengthen the thinking
-4. Point to 2-3 related themes or data points that could be useful
-Be direct, intellectually rigorous, and constructive. Use institutional voice. Maximum 300 words. Format as 3-4 distinct numbered points.`,
+          tools: selectedSources.includes('full-web') || selectedSources.includes('trusted-web') ? [{ type: 'web_search_20250305', name: 'web_search' }] : [],
+          system: `You are a senior external research counterpart — think a seasoned economist at a rival institution, a macro PM, or a well-regarded sell-side strategist. ${sourceContext} Your job: 1. Challenge the key assumptions. 2. Add context and data the author may have missed. 3. Suggest angles, complications, or risks that would strengthen the thinking. 4. Point to 2-3 related themes. Be direct, rigorous, constructive. Max 300 words, 3-4 numbered points.`,
           messages: [{ role: 'user', content: `Here is my thinking in progress:\n\n${text}\n\nChallenge this, add context, and help me develop it further.` }]
         })
       });
       const data = await resp.json();
       const result = (data.content || []).filter(b => b.type === 'text').map(b => b.text).join('');
-      const newChallenge = { id: Date.now(), timestamp: new Date().toISOString(), snapshot: text.slice(0, 100) + '...', response: result };
+      const newChallenge = {
+        id: Date.now(), timestamp: new Date().toISOString(),
+        snapshot: text.slice(0, 80) + '...',
+        response: result,
+        sources: [...selectedSources],
+        firms: [...streetViewFirms]
+      };
       const updatedChallenges = [newChallenge, ...challenges];
-      const updatedHistory = [{ timestamp: new Date().toISOString(), text }, ...(history || []).slice(0, 9)];
       setChallenges(updatedChallenges);
-      setHistory(updatedHistory);
-      onContentChange && onContentChange({ ...c_content, challenges: updatedChallenges, history: updatedHistory });
+      onContentChange && onContentChange({ ...c_content, challenges: updatedChallenges });
     } catch(e) { console.log('Challenge error:', e.message); }
     setIsChallenging(false);
   };
 
   return (
     <div style={{ background: '#fff', borderRadius: 10, overflow: 'hidden', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
-      <div style={{ padding: 16 }}>
-        {/* Header */}
-        <div style={{ marginBottom: 14, padding: '10px 14px', background: 'linear-gradient(135deg, #6B5B95 0%, #8B7AB5 100%)', borderRadius: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div>
-            <div style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>🎯 The Playground</div>
-            <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.7)', marginTop: 2 }}>Free-form thinking space — no word limits, no structure required</div>
-          </div>
+      {/* Header */}
+      <div style={{ padding: '12px 16px', background: 'linear-gradient(135deg, #6B5B95 0%, #8B7AB5 100%)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div>
+          <div style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>🎯 The Playground</div>
+          <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.7)' }}>Free-form thinking space — no structure required</div>
+        </div>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          {suggestion && (
+            <div style={{ fontSize: 10, color: '#fff', background: 'rgba(255,255,255,0.15)', borderRadius: 6, padding: '5px 10px', display: 'flex', gap: 8, alignItems: 'center' }}>
+              <span style={{ opacity: 0.8 }}>Suggest:</span>
+              <button onClick={() => onCreateFromPlayground && onCreateFromPlayground(suggestion.id, c_content.freeform)}
+                style={{ padding: '3px 10px', borderRadius: 4, border: 'none', background: suggestion.highlight ? '#C1A364' : 'rgba(255,255,255,0.25)', color: '#fff', fontSize: 10, fontWeight: 700, cursor: 'pointer' }}>
+                {suggestion.name} ↗
+              </button>
+              <span style={{ fontSize: 9, opacity: 0.7 }}>{suggestion.reason}</span>
+            </div>
+          )}
           <button onClick={challengeThinking} disabled={isChallenging || !c_content.freeform?.trim()}
-            style={{ padding: '8px 14px', borderRadius: 6, border: 'none', background: isChallenging ? 'rgba(255,255,255,0.3)' : '#fff', color: '#6B5B95', fontSize: 11, fontWeight: 700, cursor: isChallenging ? 'wait' : 'pointer', opacity: !c_content.freeform?.trim() ? 0.5 : 1 }}>
+            style={{ padding: '7px 14px', borderRadius: 6, border: 'none', background: isChallenging ? 'rgba(255,255,255,0.2)' : '#fff', color: '#6B5B95', fontSize: 11, fontWeight: 700, cursor: isChallenging ? 'wait' : 'pointer', opacity: !c_content.freeform?.trim() ? 0.5 : 1 }}>
             {isChallenging ? '⏳ Thinking...' : '⚡ Challenge My Thinking'}
           </button>
         </div>
+      </div>
 
-        {/* Title — optional */}
-        <input value={c_content.title || ''} onChange={e => onContentChange && onContentChange({ ...c_content, title: e.target.value })}
-          placeholder="Working title (optional)..."
-          style={{ width: '100%', fontSize: 16, fontFamily: 'Georgia, serif', color: c.navy, border: 'none', borderBottom: '1px solid ' + c.pearl, paddingBottom: 8, marginBottom: 14, outline: 'none' }} />
+      <div style={{ display: 'flex', height: 'calc(100vh - 280px)', minHeight: 500 }}>
 
-        {/* Free-form text area */}
-        <textarea
-          value={c_content.freeform || ''}
-          onChange={e => onContentChange && onContentChange({ ...c_content, freeform: e.target.value })}
-          placeholder="Start writing anything — a half-formed idea, a question, a data point that's stuck with you, a thesis you want to stress-test. No structure required. When you're ready, hit 'Challenge My Thinking' and an external counterpart will push back, add context, and help you develop it."
-          rows={12}
-          style={{ width: '100%', padding: '12px 14px', borderRadius: 8, border: '1px solid ' + c.pearl, fontSize: 14, lineHeight: 1.8, color: c.navy, fontFamily: 'Georgia, serif', resize: 'vertical', outline: 'none', boxSizing: 'border-box' }}
-        />
-        <div style={{ fontSize: 9, color: c.slate, textAlign: 'right', marginTop: 4 }}>
-          {(c_content.freeform || '').split(/\s+/).filter(Boolean).length} words
+        {/* LEFT — Source selector */}
+        <div style={{ width: 200, flexShrink: 0, borderRight: '1px solid ' + c.pearl, padding: '14px 12px', overflowY: 'auto' }}>
+          <div style={{ fontSize: 9, fontWeight: 700, color: c.slate, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>Sources</div>
+          {SOURCES.map(s => (
+            <div key={s.id}>
+              <div onClick={() => toggleSource(s.id)}
+                style={{ display: 'flex', alignItems: 'flex-start', gap: 8, marginBottom: 8, padding: '7px 9px', borderRadius: 7, cursor: 'pointer', background: selectedSources.includes(s.id) ? '#F5F3FF' : '#fff', border: '1px solid ' + (selectedSources.includes(s.id) ? '#DDD6FE' : c.pearl), transition: 'all 0.15s' }}>
+                <div style={{ fontSize: 14, flexShrink: 0, marginTop: 1 }}>{s.icon}</div>
+                <div>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: selectedSources.includes(s.id) ? '#6B5B95' : c.navy, lineHeight: 1.3 }}>{s.label}</div>
+                  <div style={{ fontSize: 9, color: c.slate, lineHeight: 1.4 }}>{s.desc}</div>
+                </div>
+              </div>
+              {/* Street firms sub-list */}
+              {s.hasChildren && selectedSources.includes('street-views') && (
+                <div style={{ marginLeft: 8, marginBottom: 8 }}>
+                  {STREET_FIRMS.map(firm => (
+                    <div key={firm} onClick={() => toggleFirm(firm)}
+                      style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '4px 8px', borderRadius: 5, cursor: 'pointer', marginBottom: 3, background: streetViewFirms.includes(firm) ? '#EFF6FF' : 'transparent' }}>
+                      <div style={{ width: 10, height: 10, borderRadius: 3, border: '1px solid ' + (streetViewFirms.includes(firm) ? '#2563EB' : c.pearl), background: streetViewFirms.includes(firm) ? '#2563EB' : '#fff', flexShrink: 0 }}>
+                        {streetViewFirms.includes(firm) && <div style={{ width: 6, height: 6, background: '#fff', borderRadius: 1, margin: '1px auto' }} />}
+                      </div>
+                      <span style={{ fontSize: 10, color: streetViewFirms.includes(firm) ? '#2563EB' : c.slate, fontWeight: streetViewFirms.includes(firm) ? 600 : 400 }}>{firm}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          ))}
+
+          {/* Word count */}
+          {wordCount > 0 && (
+            <div style={{ marginTop: 16, padding: '8px 9px', borderRadius: 7, background: c.ivory, border: '1px solid ' + c.pearl }}>
+              <div style={{ fontSize: 9, color: c.slate, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 3 }}>Words</div>
+              <div style={{ fontSize: 18, fontWeight: 700, color: c.navy }}>{wordCount}</div>
+              <div style={{ fontSize: 9, color: c.slate, marginTop: 2 }}>
+                {wordCount < 50 ? 'Keep going...' : wordCount < 150 ? 'Desk commentary territory' : wordCount < 400 ? 'Ideas & Insights territory' : 'Macro & Markets territory'}
+              </div>
+            </div>
+          )}
+
+          {/* Create content */}
+          {wordCount >= 50 && (
+            <div style={{ marginTop: 10 }}>
+              <div style={{ fontSize: 9, color: c.slate, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>Create from this</div>
+              {[
+                { id: 'topMarketTakeaways', name: 'Top Market Takeaways', min: 50, highlight: wordCount >= 100 && wordCount < 400 },
+                { id: 'ideasInsights', name: 'Ideas & Insights', min: 150, highlight: wordCount >= 200 && wordCount < 600 },
+                { id: 'macroMarkets', name: 'Macro & Markets', min: 300, highlight: wordCount >= 400 },
+                { id: 'deskCommentary', name: 'Desk Commentary', min: 20, highlight: wordCount < 100 },
+              ].filter(t => wordCount >= t.min).map(t => (
+                <button key={t.id} onClick={() => onCreateFromPlayground && onCreateFromPlayground(t.id, c_content.freeform)}
+                  style={{ display: 'block', width: '100%', marginBottom: 5, padding: '6px 9px', borderRadius: 6, border: '1px solid ' + (t.highlight ? '#6B5B95' : c.pearl), background: t.highlight ? '#F5F3FF' : '#fff', color: t.highlight ? '#6B5B95' : c.slate, fontSize: 10, fontWeight: t.highlight ? 700 : 400, cursor: 'pointer', textAlign: 'left' }}>
+                  {t.highlight ? '★ ' : ''}{t.name} ↗
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
-        {/* Challenge responses */}
-        {challenges.length > 0 && (
-          <div style={{ marginTop: 20 }}>
-            <div style={{ fontSize: 10, fontWeight: 700, color: '#6B5B95', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 12 }}>
-              External Counterpart Responses ({challenges.length})
+        {/* MIDDLE — Writing area */}
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '14px 16px', borderRight: '1px solid ' + c.pearl }}>
+          <input value={c_content.title || ''} onChange={e => onContentChange && onContentChange({ ...c_content, title: e.target.value })}
+            placeholder="Working title (optional)..."
+            style={{ width: '100%', fontSize: 15, fontFamily: 'Georgia, serif', color: c.navy, border: 'none', borderBottom: '1px solid ' + c.pearl, paddingBottom: 8, marginBottom: 12, outline: 'none' }} />
+          <textarea
+            value={c_content.freeform || ''}
+            onChange={e => onContentChange && onContentChange({ ...c_content, freeform: e.target.value })}
+            placeholder="Start writing anything — a half-formed idea, a question, a data point that caught your attention, a thesis you want to stress-test. No structure required. Hit 'Challenge My Thinking' when ready."
+            style={{ flex: 1, width: '100%', padding: 0, border: 'none', fontSize: 13, lineHeight: 1.8, color: c.navy, fontFamily: 'Georgia, serif', resize: 'none', outline: 'none', boxSizing: 'border-box' }}
+          />
+        </div>
+
+        {/* RIGHT — Challenge responses */}
+        <div style={{ width: 320, flexShrink: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+          <div style={{ padding: '10px 14px', borderBottom: '1px solid ' + c.pearl, background: c.ivory }}>
+            <div style={{ fontSize: 10, fontWeight: 700, color: '#6B5B95', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+              External Counterpart {challenges.length > 0 ? `(${challenges.length})` : ''}
             </div>
+          </div>
+          <div style={{ flex: 1, overflowY: 'auto', padding: '12px 14px' }}>
+            {challenges.length === 0 && !isChallenging && (
+              <div style={{ textAlign: 'center', padding: '40px 16px', color: c.slate }}>
+                <div style={{ fontSize: 28, marginBottom: 8, opacity: 0.4 }}>💬</div>
+                <div style={{ fontSize: 12 }}>Hit "Challenge My Thinking" to get pushback, context, and insights from an external research counterpart.</div>
+              </div>
+            )}
+            {isChallenging && (
+              <div style={{ padding: '12px 14px', background: '#F5F3FF', borderRadius: 8, border: '1px solid #DDD6FE', marginBottom: 10 }}>
+                <div style={{ fontSize: 11, color: '#6B5B95', fontWeight: 600 }}>⏳ Thinking...</div>
+              </div>
+            )}
             {challenges.map((ch, idx) => (
-              <div key={ch.id} style={{ marginBottom: 14, padding: '12px 14px', background: idx === 0 ? '#F5F3FF' : c.ivory, borderRadius: 8, border: '1px solid ' + (idx === 0 ? '#DDD6FE' : c.pearl) }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+              <div key={ch.id} style={{ marginBottom: 12, padding: '12px 13px', background: idx === 0 ? '#F5F3FF' : c.ivory, borderRadius: 8, border: '1px solid ' + (idx === 0 ? '#DDD6FE' : c.pearl) }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6, alignItems: 'center' }}>
                   <div style={{ fontSize: 9, fontWeight: 700, color: '#6B5B95', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                    {idx === 0 ? '✦ Latest Response' : `Response ${challenges.length - idx}`}
+                    {idx === 0 ? '✦ Latest' : `#${challenges.length - idx}`}
                   </div>
-                  <div style={{ fontSize: 9, color: c.slate }}>{new Date(ch.timestamp).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}</div>
+                  <div style={{ display: 'flex', gap: 4 }}>
+                    {(ch.sources || []).map(s => {
+                      const src = [{ id:'full-web',icon:'🌐'},{id:'trusted-web',icon:'✅'},{id:'jpm-ib',icon:'🏦'},{id:'jpm-pb',icon:'🔒'},{id:'street-views',icon:'📊'}].find(x=>x.id===s);
+                      return src ? <span key={s} style={{ fontSize: 11 }} title={s}>{src.icon}</span> : null;
+                    })}
+                  </div>
                 </div>
-                <div style={{ fontSize: 10, color: c.slate, fontStyle: 'italic', marginBottom: 6 }}>Based on: "{ch.snapshot}"</div>
-                <div style={{ fontSize: 13, lineHeight: 1.7, color: c.navy, whiteSpace: 'pre-wrap' }}>{ch.response}</div>
+                <div style={{ fontSize: 9, color: c.slate, fontStyle: 'italic', marginBottom: 6 }}>Based on: "{ch.snapshot}"</div>
+                <div style={{ fontSize: 12, lineHeight: 1.65, color: c.navy, whiteSpace: 'pre-wrap' }}>{ch.response}</div>
+                <div style={{ fontSize: 9, color: c.slate, marginTop: 6, textAlign: 'right' }}>
+                  {new Date(ch.timestamp).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
+                </div>
               </div>
             ))}
           </div>
-        )}
+        </div>
+
       </div>
     </div>
   );
@@ -8220,6 +8341,29 @@ ${sectionsText}`;
   const [generateError, setGenerateError] = useState('');
   
   // Forward Look → Create content
+  const handleCreateFromPlayground = (templateId, freeformText) => {
+    // Pre-populate the target template with the playground freeform text as a starting draft
+    const briefContent = freeformText ? freeformText.slice(0, 800) : '';
+    setTemplateContents(prev => ({
+      ...prev,
+      [templateId]: {
+        ...(prev[templateId] || {}),
+        title: '',
+        sections: templateId === 'deskCommentary'
+          ? [{ id: 'headline', title: 'Headline View', content: briefContent }]
+          : templateId === 'macroMarkets'
+          ? [{ id: 'opening', title: 'Opening Context', content: briefContent }]
+          : [{ id: 'hook', title: 'Opening Paragraph', content: briefContent }],
+      }
+    }));
+    setActiveTemplate(templateId);
+    setActiveTeam('gis');
+    setEditingFromLibrary(true);
+    setEditingItemId(null);
+    setActiveTab('editor');
+    setSaveStatus('unsaved');
+  };
+
   const handleForwardLookCreate = async (event, autoGenerate = false) => {
     const ticker = event.ticker || '';
     const date = new Date(event.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
@@ -8408,7 +8552,7 @@ ${sectionsText}`;
     
     switch (activeTemplate) {
       case 'dailyMarketUpdate': return <DailyMarketUpdateTemplate content={content} onContentChange={onChange} onFetchMarketData={fetchMarketData} />;
-      case 'playground': return <PlaygroundTemplate content={content} onContentChange={onChange} />;
+      case 'playground': return <PlaygroundTemplate content={content} onContentChange={onChange} onCreateFromPlayground={handleCreateFromPlayground} />;
       case 'deskCommentary': return <DeskCommentaryTemplate content={content} onContentChange={onChange} onShowExposure={setClientExposureTicker} />;
       case 'morningMeeting': return <MorningMeetingTemplate content={content} onContentChange={onChange} />;
       case 'topMarketTakeaways': return <TopMarketTakeawaysTemplate content={content} onContentChange={onChange} />;
