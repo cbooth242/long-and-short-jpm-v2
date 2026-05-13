@@ -1224,7 +1224,7 @@ ${getXmlStructure()}`;
     setDraftContent(null);
     setGenerationStep(isMacro ? 'Building research piece...' : 'Generating draft...');
     try {
-      const maxTokens = isMacro ? 2500 : 500;
+      const maxTokens = isMacro ? 5000 : 1000;
       const model = isMacro ? 'claude-sonnet-4-20250514' : 'claude-haiku-4-5-20251001';
       const userPrompt = isMacro ? buildMacroPrompt() : buildStandardPrompt();
       const raw = await callClaude({ model, max_tokens: maxTokens, system: getSystemPrompt(), messages: [{ role: 'user', content: userPrompt }] });
@@ -1565,8 +1565,8 @@ const VisualChartContent = ({ c_content, templateName }) => {
         headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
         body: JSON.stringify({
           model: 'claude-haiku-4-5-20251001', max_tokens: 1000,
-          system: 'Extract the most compelling quantitative data story from this investment content and return ONLY valid JSON. No markdown.',
-          messages: [{ role: 'user', content: `Read this investment content and extract or infer the most chart-worthy data. Return JSON:\n{"title":"concise chart title","subtitle":"what this shows and why it matters","type":"bar|line|area","xKey":"xAxis label","yKey":"yAxis label","unit":"%|$|x|bp|","data":[{"name":"label","value":number,"value2":number_or_null}],"insight":"one powerful takeaway sentence","source":"data source if mentioned"}\n\nContent:\n${allText.slice(0, 2000)}` }]
+          system: 'You are a financial data visualisation expert. Extract the most compelling quantitative story and return ONLY valid JSON. No markdown, no explanation.',
+          messages: [{ role: 'user', content: `Read this investment content and build the best possible chart. CRITICAL RULES: (1) ALL values in the data array MUST use the same unit and scale - never mix percentages with basis points or raw numbers with billions. (2) If you have basis points, convert everything to basis points. If percentages, use percentages throughout. (3) Choose 4-8 data points that tell a clear visual story. (4) Values should span a meaningful range - avoid having one value 10x larger than others unless that IS the story. Return this exact JSON structure:\n{"title":"punchy chart title that states the insight","subtitle":"one sentence explaining what this shows","type":"bar","xKey":"x axis label","yKey":"y axis label with unit","unit":"% or bp or x or $B","data":[{"name":"short label","value":number},{"name":"short label","value":number}],"insight":"the single most important takeaway from this chart","source":"source if mentioned"}\n\nContent:\n${allText.slice(0, 2500)}` }]
         })
       });
       const data = await resp.json();
@@ -1609,11 +1609,14 @@ const VisualChartContent = ({ c_content, templateName }) => {
       data,
       margin: { top: 20, right: 30, left: 10, bottom: 60 }
     };
-    const xAxis = <XAxis dataKey="name" tick={{ fill: 'rgba(255,255,255,0.6)', fontSize: 11 }} angle={-30} textAnchor="end" height={70} />;
-    const yAxis = <YAxis tick={{ fill: 'rgba(255,255,255,0.4)', fontSize: 10 }} unit={chartData.unit || ''} />;
-    const grid = <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" />;
+    const xAxis = <XAxis dataKey="name" tick={{ fill: '#444', fontSize: 11 }} angle={-30} textAnchor="end" height={70} />;
+    const minVal = Math.min(...(chartData?.data || []).map(d => Math.min(d.value || 0, d.value2 || Infinity)));
+    const maxVal2 = Math.max(...(chartData?.data || []).map(d => Math.max(d.value || 0, d.value2 || -Infinity)));
+    const yDomain = [minVal > 0 ? 0 : Math.floor(minVal * 1.1), Math.ceil(maxVal2 * 1.15)];
+    const yAxis = <YAxis tick={{ fill: '#666', fontSize: 10 }} unit={chartData.unit || ''} domain={yDomain} tickCount={6} />;
+    const grid = <CartesianGrid strokeDasharray="3 3" stroke="#E8E8E8" />;
     const tooltip = <Tooltip content={<CustomTooltip />} />;
-    const legend = hasValue2 ? <Legend wrapperStyle={{ color: 'rgba(255,255,255,0.6)', fontSize: 11, paddingTop: 16 }} /> : null;
+    const legend = hasValue2 ? <Legend wrapperStyle={{ color: '#555', fontSize: 11, paddingTop: 16 }} /> : null;
 
     if (chartType === 'line') return (
       <LineChart {...commonProps}>
@@ -2645,6 +2648,14 @@ const OutputPreviewPanel = ({ isOpen, onClose, templateName, templateId, content
 
       </div>
 
+      {articleContent?.externalLink && (
+        <div style={{ marginTop: 24, padding: '12px 0', borderTop: '1px solid ' + jpm.pearl, textAlign: 'center' }}>
+          <a href={articleContent.externalLink} target="_blank" rel="noopener noreferrer"
+            style={{ fontSize: 12, color: jpm.gold, fontWeight: 600, textDecoration: 'none' }}>
+            ↗ Read on Nexus · J.P. Morgan Private Bank
+          </a>
+        </div>
+      )}
       <JPMDisclaimer isEmail={isEmail} />
     </div>
   );
@@ -2736,11 +2747,11 @@ const OutputPreviewPanel = ({ isOpen, onClose, templateName, templateId, content
                 </div>
               )}
               {/* Content */}
-              <div style={{ padding: isMobile ? 24 : '32px 48px', maxWidth: format === 'pdf' ? 900 : 'none', margin: format === 'pdf' ? '0 auto' : 0 }}>
+              <div style={{ padding: isMobile ? 16 : '24px 32px', maxWidth: 'none', margin: 0 }}>
                 {device === 'email'
                   ? <EmailPreviewContent c_content={c_content} templateName={templateName} metadata={m} />
                   : device === 'pdf'
-                  ? <ArticleContent isMobile={false} isEmail={false} isPDF={true} />
+                  ? <ArticleContent isMobile={false} isEmail={false} isPDF={true} c_content={c_content} />
                   : templateId === 'videoPublish'
                   ? <VideoArticleContent isMobile={isMobile} />
                   : templateId === 'eventResponse'
@@ -2751,7 +2762,7 @@ const OutputPreviewPanel = ({ isOpen, onClose, templateName, templateId, content
                   ? <MorningMeetingContent isMobile={isMobile} />
                   : templateId === 'dailyMarketUpdate'
                   ? <DailyMarketUpdateContent isMobile={isMobile} c_content={c_content} formatText={formatText} JPMDisclaimer={JPMDisclaimer} />
-                  : <ArticleContent isMobile={isMobile} isEmail={false} isPDF={false} />
+                  : <ArticleContent isMobile={isMobile} isEmail={false} isPDF={false} c_content={c_content} />
                 }
               </div>
             </div>
@@ -5312,7 +5323,7 @@ const QualityScoresSection = ({ items }) => {
     const ctx = 'Title: "' + (item.title||'Untitled') + '". Template: ' + (item.typeLabel||'') + '. Regions: ' + ((item.regions||[]).join(', ')||'Global') + '. Body excerpt: ' + bodyText.slice(0, 400);
     const prompt = 'You are a senior J.P. Morgan Private Bank editorial director evaluating content for UHNW clients. Score each criterion 1-5 (5=excellent, 1=poor). Return ONLY this XML with no other text: <SCORES><TITLE>n</TITLE><LENGTH>n</LENGTH><TONE>n</TONE><RELEVANCE>n</RELEVANCE><CLARITY>n</CLARITY><DEPTH>n</DEPTH><IMPACT>n</IMPACT><DIFFERENTIATION>n</DIFFERENTIATION><INTERESTING>n</INTERESTING><ACTIONABILITY>n</ACTIONABILITY></SCORES>. Content to evaluate: ' + ctx;
     try {
-      const raw = await callClaude({ model: 'claude-haiku-4-5-20251001', max_tokens: 250, messages: [{ role: 'user', content: prompt }] });
+      const raw = await callClaude({ model: 'claude-haiku-4-5-20251001', max_tokens: 500, messages: [{ role: 'user', content: prompt }] });
       const ex = (tag) => { const m = raw.match(new RegExp('<' + tag + '>([^<]+)</' + tag + '>')); return m ? parseFloat(m[1]) : null; };
       const s = { title: ex('TITLE'), length: ex('LENGTH'), tone: ex('TONE'), relevance: ex('RELEVANCE'), clarity: ex('CLARITY'), depth: ex('DEPTH'), impact: ex('IMPACT'), differentiation: ex('DIFFERENTIATION'), interesting: ex('INTERESTING'), actionability: ex('ACTIONABILITY') };
       const vals = Object.values(s).filter(Boolean);
@@ -6963,13 +6974,13 @@ const ContentCircle = ({ currentContent, libraryItems, onOpen }) => {
   if (scored.length === 0) return null;
 
   return (
-    <div style={{ position:'fixed', left:0, top:'50%', transform:'translateY(-50%)', zIndex:500 }}>
+    <div style={{ position:'fixed', right:0, top:'50%', transform:'translateY(-50%)', zIndex:500 }}>
       {/* Toggle tab — always visible */}
       <div onClick={() => setHidden(h => !h)}
-        style={{ position:'absolute', right: hidden ? -32 : -24, top:'50%', transform:'translateY(-50%)', background:c.gold, color:'#fff', borderRadius:'0 6px 6px 0', padding:'8px 6px', cursor:'pointer', fontSize:10, fontWeight:700, writingMode:'vertical-rl', letterSpacing:'0.08em', userSelect:'none', boxShadow:'2px 0 8px rgba(0,0,0,0.15)' }}>
+        style={{ position:'absolute', left: hidden ? -32 : -24, top:'50%', transform:'translateY(-50%)', background:c.gold, color:'#fff', borderRadius:'6px 0 0 6px', padding:'8px 6px', cursor:'pointer', fontSize:10, fontWeight:700, writingMode:'vertical-rl', letterSpacing:'0.08em', userSelect:'none', boxShadow:'-2px 0 8px rgba(0,0,0,0.15)' }}>
         {hidden ? '▷ Related' : '◁ Hide'}
       </div>
-      {!hidden && <div style={{ background:'#fff', boxShadow:'2px 0 12px rgba(0,0,0,0.1)', borderRadius:'0 10px 10px 0', padding:'12px 14px', width:200, borderLeft:'3px solid '+c.gold }}>
+      {!hidden && <div style={{ background:'#fff', boxShadow:'-2px 0 12px rgba(0,0,0,0.1)', borderRadius:'10px 0 0 10px', padding:'12px 14px', width:200, borderRight:'3px solid '+c.gold }}>
         <div style={{ fontSize:9, fontWeight:700, color:c.gold, textTransform:'uppercase', letterSpacing:'0.1em', marginBottom:10 }}>
           📎 Related Content
         </div>
@@ -7038,7 +7049,7 @@ const ForwardLookTab = ({ onCreateContent: handleCreateFromEvent }) => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
         body: JSON.stringify({
-          model: 'claude-haiku-4-5-20251001', max_tokens: 300,
+          model: 'claude-haiku-4-5-20251001', max_tokens: 600,
           tools: [{ type: 'web_search_20250305', name: 'web_search' }],
           system: 'Financial research assistant. Search for what happened at this event and return ONLY JSON.',
           messages: [{ role: 'user', content: `Search for the result of: "${event.title}" on ${event.date}. Return JSON only: {"verdict":"beat"|"miss"|"in-line"|"n/a","actual":"actual value","expected":"consensus","summary":"one sentence"}` }]
@@ -9183,6 +9194,38 @@ ${sectionsText}`;
                         </select>
                       </div>
                       
+                      {/* External Link */}
+                      <div style={{ marginBottom: 14 }}>
+                        <label style={{ fontSize: 10, color: c.gold, textTransform: 'uppercase', letterSpacing: 0.5, display: 'block', marginBottom: 4 }}>External Link (Nexus URL)</label>
+                        <input
+                          value={templateContents[activeTemplate]?.externalLink || ''}
+                          onChange={(e) => updateTemplateContent(activeTemplate, { externalLink: e.target.value })}
+                          placeholder="https://privatebank.jpmorgan.com/..."
+                          style={{ width: '100%', padding: 8, borderRadius: 6, border: '1px solid ' + c.pearl, fontSize: 11, background: '#fff', fontFamily: 'monospace' }}
+                        />
+                        {templateContents[activeTemplate]?.externalLink && (
+                          <a href={templateContents[activeTemplate].externalLink} target="_blank" rel="noopener noreferrer"
+                            style={{ fontSize: 10, color: c.teal, display: 'block', marginTop: 4 }}>
+                            ↗ Open link
+                          </a>
+                        )}
+                      </div>
+
+                      {/* External Link */}
+                      <div style={{ marginBottom: 14 }}>
+                        <label style={{ fontSize: 10, color: c.gold, textTransform: 'uppercase', letterSpacing: 0.5, display: 'block', marginBottom: 4 }}>External Link (Nexus URL)</label>
+                        <input
+                          value={templateContents[activeTemplate]?.externalLink || ''}
+                          onChange={(e) => updateTemplateContent(activeTemplate, { externalLink: e.target.value })}
+                          placeholder="https://privatebank.jpmorgan.com/..."
+                          style={{ width: '100%', padding: 8, borderRadius: 6, border: '1px solid ' + c.pearl, fontSize: 11, background: '#fff', fontFamily: 'monospace' }}
+                        />
+                        {templateContents[activeTemplate]?.externalLink && (
+                          <a href={templateContents[activeTemplate].externalLink} target="_blank" rel="noopener noreferrer"
+                            style={{ fontSize: 10, color: c.teal, display: 'block', marginTop: 4 }}>↗ Open link</a>
+                        )}
+                      </div>
+
                       {/* Region */}
                       <div style={{ marginBottom: 14 }}>
                         <label style={{ fontSize: 10, color: c.gold, textTransform: 'uppercase', letterSpacing: 0.5, display: 'block', marginBottom: 4 }}>Region</label>
@@ -9339,7 +9382,7 @@ ${sectionsText}`;
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json', 'x-api-key': localStorage.getItem('_ak')||'', 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
                   body: JSON.stringify({
-                    model: 'claude-haiku-4-5-20251001', max_tokens: 2000,
+                    model: 'claude-haiku-4-5-20251001', max_tokens: 4000,
                     system: 'You are a professional financial translator for J.P. Morgan Private Bank. Translate the content accurately, preserving all financial terminology and the professional tone. Return ONLY valid JSON matching the input structure exactly.',
                     messages: [{ role: 'user', content: `Translate this JSON content to ${langName}. Keep all JSON keys in English. Only translate the values. Return ONLY the JSON object with no other text:
 ${sourceText}` }]
