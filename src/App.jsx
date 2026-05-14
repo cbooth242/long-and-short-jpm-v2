@@ -1091,6 +1091,36 @@ const RichSectionEditor = ({ sections: propSections, onChange }) => {
 // AI DRAFTING PANEL
 // ============================================
 
+// Animated progress bar for M&M 16k generation
+const MacroProgress = () => {
+  const [elapsed, setElapsed] = React.useState(0);
+  const stages = [
+    { at: 0,  label: 'Reading your brief...' },
+    { at: 8,  label: 'Researching the thesis...' },
+    { at: 20, label: 'Drafting opening context...' },
+    { at: 35, label: 'Building core analysis...' },
+    { at: 55, label: 'Writing risks & implications...' },
+    { at: 72, label: 'Composing conclusion...' },
+    { at: 85, label: 'Polishing the essay...' },
+    { at: 95, label: 'Almost done...' },
+  ];
+  React.useEffect(() => {
+    const t = setInterval(() => setElapsed(e => e + 1), 1000);
+    return () => clearInterval(t);
+  }, []);
+  const pct = Math.min(97, (elapsed / 90) * 100);
+  const stage = [...stages].reverse().find(s => elapsed >= s.at) || stages[0];
+  return (
+    <div>
+      <div style={{ fontSize: 11, color: c.gold, fontWeight: 600, marginBottom: 6 }}>{stage.label}</div>
+      <div style={{ width: '100%', height: 4, background: c.pearl, borderRadius: 4, overflow: 'hidden' }}>
+        <div style={{ height: '100%', width: pct + '%', background: 'linear-gradient(90deg, ' + c.gold + ', ' + c.teal + ')', borderRadius: 4, transition: 'width 1s linear' }} />
+      </div>
+      <div style={{ fontSize: 10, color: c.slate, marginTop: 4, textAlign: 'right' }}>{elapsed}s</div>
+    </div>
+  );
+};
+
 const AIDraftingPanel = ({ isOpen, onClose, templateName, templateId, content, onApplyDraft }) => {
   const isMacro = templateId === 'macroMarkets';
   
@@ -1135,7 +1165,7 @@ const AIDraftingPanel = ({ isOpen, onClose, templateName, templateId, content, o
     const prompts = {
       deskCommentary: "You are a senior J.P. Morgan Private Bank strategist. Write a Headline View: 100-150 words, lead with conclusion, direct active voice, JPM/Bridgewater style. Return only XML.",
       topMarketTakeaways: "You are a senior J.P. Morgan Private Bank strategist. Write a TMT as a thesis-driven narrative essay — NOT a list. Provocative title, flowing narrative with descriptive headings, 600-900 words, polished op-ed style. Return only XML.",
-      ideasInsights: "You are a senior J.P. Morgan Private Bank GIS strategist. Write an Ideas & Insights deep-dive. You MUST generate 2 charts with realistic data in CHART XML tags. Structure: The Opportunity, What the Data Shows (Chart 1), What the Market Is Missing (Chart 2), The JPM View, What To Do. Return only XML including CHART tags.",
+      ideasInsights: "You are a senior J.P. Morgan Private Bank GIS strategist. Write an Ideas & Insights deep-dive tailored to the specific topic provided. Structure the piece around the most compelling version of the argument — do not force sections that do not serve the thesis. Include 1-2 data-driven CHART XML tags when charts strengthen the argument. Return only XML.",
       eventResponse: "You are a J.P. Morgan Private Bank strategist. Write a live event response feed. Desk commentary style — 40-60 words per update. Reactive, direct. Return only XML.",
     };
     return prompts[templateId] || "You are a senior J.P. Morgan Private Bank strategist. Institutional voice, direct, confident. Lead with conclusion. Return only XML.";
@@ -1467,7 +1497,12 @@ ${getXmlStructure()}`;
                 <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 14 }}>
                   <div style={{ width: 40, height: 40, borderRadius: '50%', border: '3px solid ' + c.pearl, borderTopColor: isMacro ? c.gold : c.teal, animation: 'spin 1s linear infinite' }} />
                   <div style={{ color: c.navy, fontSize: 13, fontWeight: 500 }}>{generationStep || 'Generating...'}</div>
-                  {isMacro && <div style={{ color: c.slate, fontSize: 11, textAlign: 'center', maxWidth: 280 }}>Writing a full research piece typically takes 60-90 seconds. Stay on this screen.</div>}
+                  {isMacro && (
+                    <div style={{ textAlign: 'center', maxWidth: 320 }}>
+                      <div style={{ color: c.slate, fontSize: 11, marginBottom: 10 }}>Writing at 16,000 tokens — full 3,000-word research piece. Takes 60–90 seconds.</div>
+                      <MacroProgress />
+                    </div>
+                  )}
                 </div>
               )}
               
@@ -2759,14 +2794,16 @@ const OutputPreviewPanel = ({ isOpen, onClose, templateName, templateId, content
             <VisualChartContent c_content={c_content} templateName={templateName} />
           </div>
         ) : (
-          <div style={{ flex: 1, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: 24, overflow: 'auto', background: '#1a1a1a' }}>
+          <div style={{ flex: 1, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: device === 'desktop' ? 0 : 24, overflow: 'auto', background: device === 'desktop' ? '#fff' : '#1a1a1a' }}>
             <div style={{ 
-              width: deviceWidth, maxWidth: '100%',
+              width: device === 'desktop' ? '100%' : deviceWidth,
+              maxWidth: device === 'desktop' ? '100%' : deviceWidth,
+              flex: device === 'desktop' ? 1 : 'none',
               minHeight: device === 'mobile' ? 700 : 'auto',
               background: '#fff', 
               borderRadius: device === 'mobile' ? 32 : 8,
               overflow: 'hidden',
-              boxShadow: '0 25px 80px rgba(0,0,0,0.5)',
+              boxShadow: device === 'desktop' ? 'none' : '0 25px 80px rgba(0,0,0,0.5)',
               border: device === 'mobile' ? '8px solid #333' : 'none'
             }}>
               {/* Browser chrome — desktop/tablet/email/pdf only */}
@@ -9587,6 +9624,7 @@ ${sourceText}` }]
           title: draft.title || templateContents[activeTemplate]?.title || '',
           sections: draft.sections || [],
           tagline: draft.tagline || templateContents[activeTemplate]?.tagline || '',
+          charts: draft.charts || templateContents[activeTemplate]?.charts || [],
         });
       }}
     />
