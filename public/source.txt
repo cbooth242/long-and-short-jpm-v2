@@ -8706,22 +8706,57 @@ ${sectionsText}`;
       const apiKey = window.__ANTHROPIC_KEY || localStorage.getItem('_ak') || '';
 
       if (isII) {
-        // I&I: direct fetch (non-streaming) so tool_use/tool_result blocks are preserved
-        // This allows web_search to actually fire and charts to be generated
-        const iiResp = await fetch('https://api.anthropic.com/v1/messages', {
+        // I&I: two-turn approach
+        // Turn 1: search and gather data (allow conversational response)
+        // Turn 2: force XML output from the gathered data
+        const iiResp1 = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+          body: JSON.stringify({
+            model: 'claude-sonnet-4-20250514',
+            max_tokens: 4000,
+            system: 'You are a senior J.P. Morgan Private Bank GIS strategist and researcher. Search for current market data, prices, and analysis relevant to the topic. Summarise what you find — key data points, current prices, recent trends, analyst views. Be thorough.',
+            tools: [{ type: 'web_search_20250305', name: 'web_search' }],
+            messages: [{ role: 'user', content: 'Research this investment topic thoroughly.' + iiTopicHint + ' Find current data, prices, trends and analyst views. Summarise your findings.' }]
+          })
+        });
+        const iiData1 = await iiResp1.json();
+        if (iiData1.error) { setGenerateError('API error: ' + iiData1.error.message); return; }
+        const researchSummary = (iiData1.content || []).filter(b => b.type === 'text').map(b => b.text).join('');
+
+        // Turn 2: write the full I&I piece as XML using the research
+        const iiResp2 = await fetch('https://api.anthropic.com/v1/messages', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
           body: JSON.stringify({
             model: 'claude-sonnet-4-20250514',
             max_tokens: 16000,
-            system: 'You are a senior J.P. Morgan Private Bank GIS strategist. Search for current data and prices, then write a full Ideas & Insights piece. CRITICAL: (1) Never use generic section headings — write headings specific to this topic. (2) BOTH CHART tags with real numerical data are MANDATORY — never omit them. (3) All values within each chart must use consistent units. (4) 1,200-2,000 words. Return ONLY XML.',
-            tools: [{ type: 'web_search_20250305', name: 'web_search' }],
-            messages: [{ role: 'user', content: msg }]
+            system: `You are a senior J.P. Morgan Private Bank GIS strategist. Write a full Ideas & Insights piece using the research provided.
+
+MANDATORY RULES — violating any of these makes the output unusable:
+1. OUTPUT ONLY XML — start your response with <TITLE> and end with </CHART>. No preamble, no explanation, no prose before the XML.
+2. Section headings must be SPECIFIC to this topic — never "The Opportunity", "The Setup", "Our View". Write headings that could only exist in this piece.
+3. BOTH CHART tags are REQUIRED. Each must have real numerical data from the research. Omitting a chart is a failure.
+4. All values within each chart must use consistent units (all %, all $B, all basis points — never mix).
+5. 1,200–2,000 words across 3–5 sections.
+
+XML FORMAT:
+<TITLE>thesis-driven title</TITLE>
+<SUBTITLE>one sentence stating the investment insight</SUBTITLE>
+<SECTION id="s1" title="[specific heading]">300+ words</SECTION>
+<SECTION id="s2" title="[specific heading]">300+ words</SECTION>
+<SECTION id="s3" title="[specific heading]">200+ words</SECTION>
+<CHART id="chart1" title="[title stating the finding]" type="Line" yLabel="[label with unit]" source="[source, year]" caption="[what this shows]"><DATAPOINTS>Label:value,Label:value,Label:value,Label:value,Label:value</DATAPOINTS></CHART>
+<CHART id="chart2" title="[title stating the finding]" type="Bar" yLabel="[label with unit]" source="[source, year]" caption="[what this shows]"><DATAPOINTS>Label:value,Label:value,Label:value,Label:value</DATAPOINTS></CHART>`,
+            messages: [{ role: 'user', content: 'Research findings:\n\n' + researchSummary + '\n\nNow write the full Ideas & Insights piece as XML. Start immediately with <TITLE>. No preamble.' }]
           })
         });
-        const iiData = await iiResp.json();
-        if (iiData.error) { setGenerateError('API error: ' + iiData.error.message); return; }
-        raw = (iiData.content || []).filter(b => b.type === 'text').map(b => b.text).join('');
+        const iiData2 = await iiResp2.json();
+        if (iiData2.error) { setGenerateError('API error: ' + iiData2.error.message); return; }
+        raw = (iiData2.content || []).filter(b => b.type === 'text').map(b => b.text).join('');
+        // Strip any prose before the first XML tag
+        const xmlStart = raw.indexOf('<TITLE>');
+        if (xmlStart > 0) raw = raw.slice(xmlStart);
       } else if (useSearch) {
         const chunk = await callClaude({
           model: 'claude-haiku-4-5-20251001',
