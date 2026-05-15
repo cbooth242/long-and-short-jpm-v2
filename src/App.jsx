@@ -1633,12 +1633,11 @@ const EmailPreviewContent = ({ c_content, templateName, metadata }) => {
             <span style={{ fontSize: 11, color: '#555' }}>{date}</span>
           </div>
         </div>
-        {/* JPM branded header */}
-        <div style={{ background: '#0A1A2F', padding: '18px 28px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div style={{ fontSize: 12, color: '#C1A364', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em' }}>J.P. Morgan Private Bank</div>
-          <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{templateName} · {team} · {date}</div>
+        {/* Clean header — gold rule, no navy bar */}
+        <div style={{ padding: '20px 28px 12px', borderBottom: '2px solid #C1A364' }}>
+          <div style={{ fontSize: 9, fontWeight: 700, color: '#C1A364', textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: 4 }}>J.P. Morgan Private Bank · {team}</div>
+          <div style={{ fontSize: 9, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.1em' }}>{templateName} · {date}</div>
         </div>
-        <div style={{ height: 3, background: 'linear-gradient(90deg, #C1A364, #D4B87A, #C1A364)' }} />
         {/* Body */}
         <div style={{ padding: '32px 28px' }}>
           <h1 style={{ fontFamily: 'Georgia, serif', fontSize: 26, fontWeight: 400, color: '#0A1A2F', margin: '0 0 10px', lineHeight: 1.3 }}>{title}</h1>
@@ -8748,15 +8747,11 @@ ${sectionsText}`;
         const merged = parsed.sections.map(s => s.content).filter(Boolean).join(' ');
         finalParsed = { ...finalParsed, sections: [{ id: 'headline', title: 'Headline View', content: merged }] };
       }
-      // For I&I: force full replacement so new sections/charts fully replace old content
+      // I&I: force full replacement; others merge
       if (activeTemplate === 'ideasInsights') {
-        setTemplateContents(prev => ({ ...prev, [activeTemplate]: { ...finalParsed } }));
-      } else {
-      if (activeTemplate === 'ideasInsights') {
-        setTemplateContents(prev => ({ ...prev, [activeTemplate]: { ...finalParsed } }));
+        setTemplateContents(prev => ({ ...prev, ideasInsights: { ...finalParsed } }));
       } else {
         updateTemplateContent(activeTemplate, finalParsed);
-      }
       }
       setSaveStatus('unsaved');
 
