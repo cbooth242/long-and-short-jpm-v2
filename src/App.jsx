@@ -44,6 +44,7 @@ function parseTagged(text) {
   const result = {};
   const sections = [];
   const charts = [];
+
   const titleM = text.match(/<TITLE>([\s\S]*?)<\/TITLE>/);
   if (titleM) result.title = titleM[1].trim();
   const subtitleM = text.match(/<SUBTITLE>([\s\S]*?)<\/SUBTITLE>/);
@@ -52,49 +53,74 @@ function parseTagged(text) {
   if (summaryM) result.summary = summaryM[1].trim();
   const taglineM = text.match(/<TAGLINE>([\s\S]*?)<\/TAGLINE>/);
   if (taglineM) result.tagline = taglineM[1].trim();
-  // Robust section parser: handle any attribute order, apostrophes in titles, mixed quotes
+
+  // Robust section parser: handle any attribute order, quote style, apostrophes
   const sectionTagRe = /<SECTION([^>]+)>([\s\S]*?)<\/SECTION>/g;
   let m;
   while ((m = sectionTagRe.exec(text)) !== null) {
     const attrs = m[1];
-    const content = m[2];
-    const idM = attrs.match(/\bid=["']?([^"'\s>]+)["']?/);
-    const titleM = attrs.match(/\btitle="([^"]*)"/) || attrs.match(/\btitle='([^']*)'/);
-    if (idM && titleM) {
-      // Strip any CHART/DATAPOINTS tags from section content — they render separately
-      const cleanContent = content.replace(/<CHART[\s\S]*?<\/CHART>/g, '').replace(/<DATAPOINTS>[\s\S]*?<\/DATAPOINTS>/g, '').trim();
-      sections.push({ id: idM[1].trim(), title: titleM[1].trim(), content: cleanContent });
-    } else if (idM) {
-      const cleanContent = content.replace(/<CHART[\s\S]*?<\/CHART>/g, '').replace(/<DATAPOINTS>[\s\S]*?<\/DATAPOINTS>/g, '').trim();
-      sections.push({ id: idM[1].trim(), title: idM[1].trim(), content: cleanContent });
-    }
+    const rawContent = m[2];
+    const cleanContent = rawContent.replace(/<CHART[\s\S]*?<\/CHART>/g, '').replace(/<DATAPOINTS>[\s\S]*?<\/DATAPOINTS>/g, '').trim();
+    const idM = attrs.match(/\bid=["']?([^"'>\s]+)["']?/);
+    const tM = attrs.match(/\btitle="([^"]*)"/) || attrs.match(/\btitle='([^']*)'/);
+    const sid = idM ? idM[1].trim() : 's' + (sections.length + 1);
+    const stitle = tM ? tM[1].trim() : sid;
+    if (cleanContent) sections.push({ id: sid, title: stitle, content: cleanContent });
   }
+
+  // FALLBACK 1: markdown headings (## Heading\n\ncontent)
+  if (sections.length === 0) {
+    let body = text.replace(/<TITLE>[\s\S]*?<\/TITLE>/g, '');
+    body = body.replace(/<SUBTITLE>[\s\S]*?<\/SUBTITLE>/g, '');
+    body = body.replace(/<CHART[\s\S]*?<\/CHART>/g, '').trim();
+    const chunks = body.split(/\n(?=#{1,3}\s)/);
+    chunks.forEach((chunk, i) => {
+      chunk = chunk.trim();
+      if (!chunk) return;
+      const lines = chunk.split('\n');
+      const heading = lines[0].replace(/^#+\s*/, '').trim();
+      const content = lines.slice(1).join('\n').replace(/<[^>]+>/g, '').trim();
+      if (content) sections.push({ id: 's' + (sections.length + 1), title: heading || 'Section ' + (i + 1), content });
+    });
+  }
+
+  // FALLBACK 2: paragraph splitting — if model wrote plain prose
+  if (sections.length === 0) {
+    let body = text.replace(/<[^>]+>/g, '').replace(/.*\n/, '').trim(); // strip all tags and title line
+    const paras = body.split(/\n\n+/).map(p => p.trim()).filter(p => p.length > 40);
+    paras.slice(0, 6).forEach((para, i) => {
+      sections.push({ id: 's' + (i + 1), title: 'Section ' + (i + 1), content: para });
+    });
+  }
+
   if (sections.length) result.sections = sections;
-  // Parse CHART tags — robust: any attribute order, any quote style
+
+  // Robust CHART parser — any attribute order, any quote style
   const chartTagRe = /<CHART([^>]+)>([\s\S]*?)<\/CHART>/g;
   let cm;
   while ((cm = chartTagRe.exec(text)) !== null) {
     const cattrs = cm[1];
     const cbody = cm[2];
-    const cidM = cattrs.match(/\bid=["']?([^"'\s>]+)["']?/);
-    const ctitleM = cattrs.match(/\btitle="([^"]*)"/) || cattrs.match(/\btitle='([^']*)'/) ;
-    const ctypeM = cattrs.match(/\btype="([^"]*)"/) || cattrs.match(/\btype='([^']*)'/) ;
-    const cyLM = cattrs.match(/\byLabel="([^"]*)"/) || cattrs.match(/\byLabel='([^']*)'/) ;
-    const csrcM = cattrs.match(/\bsource="([^"]*)"/) || cattrs.match(/\bsource='([^']*)'/) ;
-    const ccapM = cattrs.match(/\bcaption="([^"]*)"/) || cattrs.match(/\bcaption='([^']*)'/) ;
+    const cidM = cattrs.match(/\bid=["']?([^"'>\s]+)["']?/);
+    const ctM = cattrs.match(/\btitle="([^"]*)"/) || cattrs.match(/\btitle='([^']*)'/);
+    const ctypeM = cattrs.match(/\btype="([^"]*)"/) || cattrs.match(/\btype='([^']*)'/);
+    const cyLM = cattrs.match(/\byLabel="([^"]*)"/) || cattrs.match(/\byLabel='([^']*)'/);
+    const csrcM = cattrs.match(/\bsource="([^"]*)"/) || cattrs.match(/\bsource='([^']*)'/);
+    const ccapM = cattrs.match(/\bcaption="([^"]*)"/) || cattrs.match(/\bcaption='([^']*)'/);
     const dpMatch = cbody.match(/<DATAPOINTS>([\s\S]*?)<\/DATAPOINTS>/);
     if (cidM) {
-      charts.push({ id: cidM[1].trim(), title: ctitleM ? ctitleM[1].trim() : '', chartType: ctypeM ? ctypeM[1].trim() : 'Bar', yLabel: cyLM ? cyLM[1].trim() : '', source: csrcM ? csrcM[1].trim() : '', caption: ccapM ? ccapM[1].trim() : '', dataRaw: dpMatch ? dpMatch[1].trim() : '', position: charts.length === 0 ? 'data' : 'missing' });
+      charts.push({ id: cidM[1].trim(), title: ctM ? ctM[1].trim() : '', chartType: ctypeM ? ctypeM[1].trim() : 'Bar', yLabel: cyLM ? cyLM[1].trim() : '', source: csrcM ? csrcM[1].trim() : '', caption: ccapM ? ccapM[1].trim() : '', dataRaw: dpMatch ? dpMatch[1].trim() : '', position: charts.length === 0 ? 'data' : 'missing' });
     }
   }
   if (charts.length) result.charts = charts;
-  // also handle simple fields like <ENTRY>, <TARGET>, <STOPLOSS>
+
   for (const field of ['entry','target','stopLoss','instrument']) {
-    const fm = text.match(new RegExp('<' + field.toUpperCase() + '>([\s\S]*?)<\/' + field.toUpperCase() + '>'));
+    const fm = text.match(new RegExp('<' + field.toUpperCase() + '>([\\s\\S]*?)<\\/' + field.toUpperCase() + '>'));
     if (fm) result[field] = fm[1].trim();
   }
   return result;
 }
+
 
 function parseMacroResponse(raw) {
   if (!raw || !raw.trim()) return null;
