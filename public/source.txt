@@ -61,19 +61,31 @@ function parseTagged(text) {
     const idM = attrs.match(/\bid=["']?([^"'\s>]+)["']?/);
     const titleM = attrs.match(/\btitle="([^"]*)"/) || attrs.match(/\btitle='([^']*)'/);
     if (idM && titleM) {
-      sections.push({ id: idM[1].trim(), title: titleM[1].trim(), content: content.trim() });
+      // Strip any CHART/DATAPOINTS tags from section content — they render separately
+      const cleanContent = content.replace(/<CHART[\s\S]*?<\/CHART>/g, '').replace(/<DATAPOINTS>[\s\S]*?<\/DATAPOINTS>/g, '').trim();
+      sections.push({ id: idM[1].trim(), title: titleM[1].trim(), content: cleanContent });
     } else if (idM) {
-      // fallback: use id as title if title extraction fails
-      sections.push({ id: idM[1].trim(), title: idM[1].trim(), content: content.trim() });
+      const cleanContent = content.replace(/<CHART[\s\S]*?<\/CHART>/g, '').replace(/<DATAPOINTS>[\s\S]*?<\/DATAPOINTS>/g, '').trim();
+      sections.push({ id: idM[1].trim(), title: idM[1].trim(), content: cleanContent });
     }
   }
   if (sections.length) result.sections = sections;
-  // Parse CHART tags for I&I
-  const chartRe = /<CHART id="([^"]+)" title="([^"]*)" type="([^"]*)" yLabel="([^"]*)" source="([^"]*)" caption="([^"]*)">([\s\S]*?)<\/CHART>/g;
+  // Parse CHART tags — robust: any attribute order, any quote style
+  const chartTagRe = /<CHART([^>]+)>([\s\S]*?)<\/CHART>/g;
   let cm;
-  while ((cm = chartRe.exec(text)) !== null) {
-    const dpMatch = cm[7].match(/<DATAPOINTS>([\s\S]*?)<\/DATAPOINTS>/);
-    charts.push({ id: cm[1].trim(), title: cm[2].trim(), chartType: cm[3].trim() || 'Line', yLabel: cm[4].trim(), source: cm[5].trim(), caption: cm[6].trim(), dataRaw: dpMatch ? dpMatch[1].trim() : '', position: charts.length === 0 ? 'data' : 'missing' });
+  while ((cm = chartTagRe.exec(text)) !== null) {
+    const cattrs = cm[1];
+    const cbody = cm[2];
+    const cidM = cattrs.match(/\bid=["']?([^"'\s>]+)["']?/);
+    const ctitleM = cattrs.match(/\btitle="([^"]*)"/) || cattrs.match(/\btitle='([^']*)'/) ;
+    const ctypeM = cattrs.match(/\btype="([^"]*)"/) || cattrs.match(/\btype='([^']*)'/) ;
+    const cyLM = cattrs.match(/\byLabel="([^"]*)"/) || cattrs.match(/\byLabel='([^']*)'/) ;
+    const csrcM = cattrs.match(/\bsource="([^"]*)"/) || cattrs.match(/\bsource='([^']*)'/) ;
+    const ccapM = cattrs.match(/\bcaption="([^"]*)"/) || cattrs.match(/\bcaption='([^']*)'/) ;
+    const dpMatch = cbody.match(/<DATAPOINTS>([\s\S]*?)<\/DATAPOINTS>/);
+    if (cidM) {
+      charts.push({ id: cidM[1].trim(), title: ctitleM ? ctitleM[1].trim() : '', chartType: ctypeM ? ctypeM[1].trim() : 'Bar', yLabel: cyLM ? cyLM[1].trim() : '', source: csrcM ? csrcM[1].trim() : '', caption: ccapM ? ccapM[1].trim() : '', dataRaw: dpMatch ? dpMatch[1].trim() : '', position: charts.length === 0 ? 'data' : 'missing' });
+    }
   }
   if (charts.length) result.charts = charts;
   // also handle simple fields like <ENTRY>, <TARGET>, <STOPLOSS>
@@ -8715,6 +8727,7 @@ CRITICAL RULES:
         raw += raw0;
       }
 
+      console.log('[II] raw length:', raw?.length, 'start:', raw?.slice(0, 150));
       if (!raw) { setGenerateError('No response from API. Please try again.'); return; }
 
 
