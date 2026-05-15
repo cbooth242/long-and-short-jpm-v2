@@ -3159,14 +3159,8 @@ const IdeasInsightsTemplate = ({ content, onContentChange }) => {
     <div style={{ background: '#fff', borderRadius: 10, overflow: 'hidden', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
       <div style={{ padding: 16 }}>
         {/* Guidance */}
-        <div style={{ marginBottom: 14, padding: '10px 14px', background: '#FFF9ED', borderLeft: '3px solid ' + c.gold, borderRadius: '0 6px 6px 0' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: c.gold }}>Ideas & Insights — Writing Guidance</div>
-            <div style={{ fontSize: 11, fontWeight: 700, color: warnOver ? c.neg : wordCount > 1600 ? '#E08A00' : wordCount > 0 ? c.pos : c.slate, marginLeft: 12, flexShrink: 0 }}>{wordCount}w{warnOver ? ' ⚠ Over 2,000w' : ''}</div>
-          </div>
-          <div style={{ fontSize: 11, color: c.slate, lineHeight: 1.7 }}>
-            <strong style={{ color: c.navy }}>Each I&I should feel completely different.</strong> The thesis determines the structure — not the other way around. Choose your own section headings to fit the specific argument. Start with the investment insight stated plainly, then build the case with data. Every piece must include charts — the data tells the story the words cannot. Aim for 1,200–2,000 words across 4–6 sections. Hard cap: 2,000 words. Lead every section with the point, then support it. The "what to do" must be specific — not "consider exposure" but "add X% of Y at these levels".
-          </div>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 10 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: warnOver ? c.neg : wordCount > 1600 ? '#E08A00' : wordCount > 0 ? c.pos : c.slate }}>{wordCount}w{warnOver ? ' ⚠ Over 2,000w' : ''}</div>
         </div>
 
         <input value={c_content.title || ''} onChange={(e) => onContentChange && onContentChange({ ...c_content, title: e.target.value })}
@@ -8696,26 +8690,45 @@ ${sectionsText}`;
     const today = new Date().toLocaleDateString('en-GB', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
     const useSearch = ['topMarketTakeaways','ideasInsights','gisView'].includes(activeTemplate);
     const ctx = activeTemplate === 'deskCommentary' ? ' Focus on ' + assetClass + ' markets.' : '';
-    const msg = useSearch
+    const existingTitle = currentContent.title || '';
+    const existingContext = (currentContent.sections || []).map(s => s.content).filter(Boolean).join(' ').slice(0, 300);
+    const iiTopicHint = existingTitle ? ' Topic: ' + existingTitle + '.' : '';
+    const iiContextHint = existingContext ? ' Context from editor: ' + existingContext : '';
+    const msg = activeTemplate === 'ideasInsights'
+      ? 'Search for the latest data on this investment topic.' + iiTopicHint + iiContextHint + ' Then write a full Ideas & Insights piece. XML structure to follow: ' + structure
+      : useSearch
       ? 'Search today\'s top story.' + ctx + ' Write a concise JPM ' + templateName + '. XML tags only: ' + structure
       : 'JPM Private Bank. Today is ' + today + '.' + ctx + ' Write a realistic, specific ' + templateName + '. Return content using ONLY these XML tags, no JSON, no markdown: ' + structure;
 
     try {
       let raw = '';
       const isII = activeTemplate === 'ideasInsights';
-      const isMM = activeTemplate === 'macroMarkets';
-      const useHighPower = isII || isMM;
-      if (useSearch) {
-        const TOOLS = [{ type: 'web_search_20250305', name: 'web_search' }];
-        const msgs = [{ role: 'user', content: msg }];
+      const apiKey = window.__ANTHROPIC_KEY || localStorage.getItem('_ak') || '';
+
+      if (isII) {
+        // I&I: direct fetch (non-streaming) so tool_use/tool_result blocks are preserved
+        // This allows web_search to actually fire and charts to be generated
+        const iiResp = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+          body: JSON.stringify({
+            model: 'claude-sonnet-4-20250514',
+            max_tokens: 16000,
+            system: 'You are a senior J.P. Morgan Private Bank GIS strategist. Search for current data and prices, then write a full Ideas & Insights piece. CRITICAL: (1) Never use generic section headings — write headings specific to this topic. (2) BOTH CHART tags with real numerical data are MANDATORY — never omit them. (3) All values within each chart must use consistent units. (4) 1,200-2,000 words. Return ONLY XML.',
+            tools: [{ type: 'web_search_20250305', name: 'web_search' }],
+            messages: [{ role: 'user', content: msg }]
+          })
+        });
+        const iiData = await iiResp.json();
+        if (iiData.error) { setGenerateError('API error: ' + iiData.error.message); return; }
+        raw = (iiData.content || []).filter(b => b.type === 'text').map(b => b.text).join('');
+      } else if (useSearch) {
         const chunk = await callClaude({
-          model: useHighPower ? 'claude-sonnet-4-20250514' : 'claude-haiku-4-5-20251001',
-          max_tokens: useHighPower ? 16000 : 2000,
-          system: isII
-            ? 'You are a senior J.P. Morgan Private Bank GIS strategist. Search for current data then write a full Ideas & Insights piece. Return ONLY XML. Both CHART tags with real numerical data are required — never omit them. Use consistent units within each chart.'
-            : 'You are a JPMorgan Private Bank content strategist. Return only XML using the exact tags provided.',
-          tools: TOOLS,
-          messages: msgs
+          model: 'claude-haiku-4-5-20251001',
+          max_tokens: 2000,
+          system: 'You are a JPMorgan Private Bank content strategist. Return only XML using the exact tags provided.',
+          tools: [{ type: 'web_search_20250305', name: 'web_search' }],
+          messages: [{ role: 'user', content: msg }]
         });
         raw += chunk;
       } else {
