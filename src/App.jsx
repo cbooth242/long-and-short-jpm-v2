@@ -610,10 +610,11 @@ const MovableSectionsEditor = ({ sections, onChange, addButtonText = '+ Add Sect
               </div>
             ) : (
               <div
+                key={section.id + '_' + (section.content ? 'has' : 'empty')}
                 contentEditable
                 suppressContentEditableWarning
                 onBlur={(e) => updateSection(idx, 'content', e.currentTarget.innerHTML)}
-                ref={(el) => { if (el && el !== document.activeElement) el.innerHTML = section.content || ''; }}
+                dangerouslySetInnerHTML={{ __html: section.content || '' }}
                 style={editableStyle}
                 data-placeholder={section.placeholder || 'Enter content...'}
               />
@@ -8726,9 +8727,11 @@ ${sectionsText}`;
 
       if (!raw) { setGenerateError('No response from API. Please try again.'); return; }
 
+
       const parsed = parseTagged(raw);
+
       if (!parsed.title && (!parsed.sections || !parsed.sections.length)) {
-        setGenerateError('Parse failed. Response: ' + raw.slice(0, 200));
+        setGenerateError('Parse failed. Response: ' + raw.slice(0, 300));
         return;
       }
       // For DMU: preserve title, metrics, clientFlow — only update sections/content
