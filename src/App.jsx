@@ -1,4 +1,4 @@
-// Long & Short v2 — Build: 2026-05-15T16:41:53Z
+// Long & Short v2 — Build: 2026-05-15T16:50:15Z
 import React, { useState } from 'react';
 import { ResponsiveContainer, BarChart, LineChart, AreaChart, Bar, Line, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Cell } from 'recharts';
 import * as XLSX from 'xlsx';
@@ -8839,7 +8839,20 @@ ${sectionsText}`;
         });
         const iiData1 = await iiResp1.json();
         if (iiData1.error) { setGenerateError('API error: ' + iiData1.error.message); return; }
-        const researchSummary = (iiData1.content || []).filter(b => b.type === 'text').map(b => b.text).join('');
+        // Extract text from all content blocks including tool results
+        let researchSummary = (iiData1.content || [])
+          .filter(b => b.type === 'text').map(b => b.text).join('');
+        // If no text blocks yet (model stopped at tool_use), extract from tool_result content
+        if (!researchSummary.trim()) {
+          researchSummary = (iiData1.content || [])
+            .filter(b => b.type === 'tool_result')
+            .flatMap(b => (b.content || []).filter(c => c.type === 'text').map(c => c.text))
+            .join('');
+        }
+        // Fallback: use the topic hint if research returned nothing
+        if (!researchSummary.trim()) {
+          researchSummary = 'Investment topic: ' + (iiTopicHint || 'general markets') + '. Use your knowledge to write the piece.';
+        }
 
         // Turn 2: write the full I&I piece as XML — use assistant prefill to guarantee XML
         const iiResp2 = await fetch('https://api.anthropic.com/v1/messages', {
@@ -8880,7 +8893,7 @@ ${sectionsText}`;
 
       const parsed = parseTagged(raw);
       if (!parsed.title && (!parsed.sections || !parsed.sections.length)) {
-        setGenerateError('Could not parse response. Got: ' + raw.slice(0, 80));
+        setGenerateError('Parse failed. Response: ' + raw.slice(0, 200));
         return;
       }
       // For DMU: preserve title, metrics, clientFlow — only update sections/content
