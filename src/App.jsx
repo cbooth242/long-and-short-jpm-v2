@@ -1539,12 +1539,12 @@ ${getXmlStructure()}`;
 const SnippetsContent = ({ c_content }) => {
   const [snippets, setSnippets] = React.useState(null);
   const [loading, setLoading] = React.useState(false);
+  const hasContent = (c_content.sections||[]).some(s => s.content);
 
   const generate = async () => {
     const apiKey = localStorage.getItem('_ak');
     if (!apiKey) { alert('Set your API key first'); return; }
     const allText = [c_content.title, c_content.tagline, ...(c_content.sections||[]).map(s=>s.content)].filter(Boolean).join(' ');
-    if (!allText.trim()) { alert('Write some content first'); return; }
     setLoading(true);
     try {
       const resp = await fetch('https://api.anthropic.com/v1/messages', {
@@ -1552,8 +1552,8 @@ const SnippetsContent = ({ c_content }) => {
         headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
         body: JSON.stringify({
           model: 'claude-haiku-4-5-20251001', max_tokens: 400,
-          system: 'You are extracting the three most interesting, surprising, or conversation-worthy insights from investment content. Return ONLY a JSON array of 3 strings. Each string: one sentence, max 20 words, opinionated, sounds smart at a dinner party. No jargon. No "JPMorgan says". Write as if you\'re sharing an insight with a smart friend. Example: ["Gold has outperformed every major asset class for three years running — most investors still aren\'t positioned for it.", "The Fed\'s hands are tied in a way they haven\'t been since the 1970s.", "AI infrastructure spending is being revised up every quarter — the market is still pricing it as late-cycle."]',
-          messages: [{ role: 'user', content: 'Extract 3 dinner-party talking points from this:\n\n' + allText.slice(0, 2000) }]
+          system: 'Extract 3 punchy, dinner-party talking points from investment content. Return ONLY a JSON array of 3 strings. Each: one sentence, max 18 words, sounds smart and interesting, no jargon, no "JPMorgan says". Direct and opinionated.',
+          messages: [{ role: 'user', content: 'Extract 3 talking points from:\n\n' + allText.slice(0, 2000) }]
         })
       });
       const data = await resp.json();
@@ -1566,56 +1566,42 @@ const SnippetsContent = ({ c_content }) => {
 
   React.useEffect(() => { setSnippets(null); }, [c_content.title]);
 
-  const hasContent = (c_content.sections||[]).some(s => s.content);
-
   return (
-    <div style={{ background: '#fff', minHeight: '100%', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif' }}>
-      {/* Header */}
-      <div style={{ padding: '20px 32px 16px', borderBottom: '1px solid #F0EDE8' }}>
-        <div style={{ fontSize: 9, fontWeight: 700, color: '#C1A364', textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: 6 }}>J.P. Morgan Private Bank · Snippets</div>
-        <div style={{ fontSize: 22, fontFamily: 'Georgia, serif', color: '#0A1A2F', fontWeight: 400, lineHeight: 1.3 }}>{c_content.title || 'Untitled'}</div>
+    <div style={{ fontFamily: 'Georgia, serif', width: '100%', minHeight: '100%', background: '#fff' }}>
+      {/* JPM banner */}
+      <div style={{ background: '#0A1A2F', padding: '14px 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ fontSize: 11, fontWeight: 700, color: '#C1A364', textTransform: 'uppercase', letterSpacing: '0.15em' }}>J.P. Morgan Private Bank</div>
+        <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Snippets</div>
       </div>
 
-      <div style={{ padding: '28px 32px' }}>
-        {/* Generate button or snippets */}
-        {!snippets && (
-          <div style={{ textAlign: 'center', padding: '40px 0' }}>
-            <div style={{ fontSize: 40, marginBottom: 16, opacity: 0.3 }}>✦</div>
-            <div style={{ fontSize: 14, color: '#4A5568', marginBottom: 20, fontFamily: 'Georgia, serif' }}>Three punchy talking points from your piece.</div>
-            <button onClick={generate} disabled={loading || !hasContent}
-              style={{ padding: '10px 24px', borderRadius: 6, border: 'none', background: loading ? '#E5E7EB' : '#0A1A2F', color: loading ? '#9CA3AF' : '#fff', fontSize: 12, fontWeight: 600, cursor: loading || !hasContent ? 'default' : 'pointer', letterSpacing: '0.04em' }}>
-              {loading ? '✦ Generating...' : !hasContent ? 'Write content first' : '✦ Generate Snippets'}
+      <div style={{ padding: '36px 40px' }}>
+        {!snippets && !loading && (
+          <div style={{ textAlign: 'center', paddingTop: 24 }}>
+            <button onClick={generate} disabled={!hasContent}
+              style={{ padding: '10px 24px', borderRadius: 6, border: 'none', background: hasContent ? '#0A1A2F' : '#E5E7EB', color: hasContent ? '#fff' : '#9CA3AF', fontSize: 13, cursor: hasContent ? 'pointer' : 'default', fontFamily: 'Georgia, serif' }}>
+              {hasContent ? 'Generate Snippets' : 'Write content first'}
             </button>
           </div>
         )}
-
+        {loading && <div style={{ textAlign: 'center', color: '#888', fontSize: 14, paddingTop: 24 }}>Generating...</div>}
         {snippets && (
           <div>
-            {snippets.map((snippet, i) => (
-              <div key={i} style={{ display: 'flex', gap: 18, marginBottom: 28, alignItems: 'flex-start' }}>
-                <div style={{ flexShrink: 0, width: 28, height: 28, borderRadius: '50%', background: '#0A1A2F', display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: 2 }}>
-                  <span style={{ color: '#C1A364', fontSize: 11, fontWeight: 700 }}>{i + 1}</span>
-                </div>
-                <div style={{ flex: 1 }}>
-                  <p style={{ fontSize: 17, lineHeight: 1.65, color: '#0A1A2F', margin: 0, fontFamily: 'Georgia, serif', fontWeight: 400 }}>{snippet}</p>
-                </div>
-              </div>
-            ))}
-
-            {/* Source label */}
-            <div style={{ marginTop: 32, paddingTop: 20, borderTop: '1px solid #F0EDE8', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div style={{ fontSize: 10, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.1em' }}>J.P. Morgan Private Bank · GIS</div>
-              <button onClick={() => setSnippets(null)}
-                style={{ fontSize: 10, color: '#C1A364', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600 }}>
-                ↺ Regenerate
-              </button>
-            </div>
+            <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+              {snippets.map((s, i) => (
+                <li key={i} style={{ display: 'flex', gap: 16, marginBottom: 28, alignItems: 'flex-start' }}>
+                  <span style={{ color: '#C1A364', fontWeight: 700, fontSize: 15, flexShrink: 0, paddingTop: 3 }}>·</span>
+                  <p style={{ fontSize: 17, lineHeight: 1.65, color: '#0A1A2F', margin: 0 }}>{s}</p>
+                </li>
+              ))}
+            </ul>
+            <button onClick={() => setSnippets(null)} style={{ marginTop: 20, fontSize: 11, color: '#C1A364', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'Georgia, serif' }}>↺ Regenerate</button>
           </div>
         )}
       </div>
     </div>
   );
 };
+
 
 const EmailPreviewContent = ({ c_content, templateName, metadata }) => {
   const title = c_content.title || 'Untitled';
@@ -1672,7 +1658,7 @@ const EmailPreviewContent = ({ c_content, templateName, metadata }) => {
         {/* Email content */}
         <div style={{ flex: 1, overflowY: 'auto', background: '#F3F2F1', padding: '20px 24px' }}>
           {/* Email card */}
-          <div style={{ background: '#fff', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', maxWidth: 680 }}>
+          <div style={{ background: '#fff', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', width: '100%' }}>
             {/* Email header in reading pane */}
             <div style={{ padding: '16px 24px', borderBottom: '1px solid #E1DFDD' }}>
               <div style={{ fontSize: 18, fontWeight: 400, color: '#0A1A2F', fontFamily: 'Georgia, serif', marginBottom: 10, lineHeight: 1.35 }}>{title}</div>
@@ -1726,6 +1712,136 @@ const EmailPreviewContent = ({ c_content, templateName, metadata }) => {
   );
 };
 
+
+const VisualChartContent = ({ c_content, templateName }) => {
+  const [chartData, setChartData] = React.useState(null);
+  const [loading, setLoading] = React.useState(false);
+  const [error, setError] = React.useState('');
+  const [chartType, setChartType] = React.useState('bar');
+
+  const GOLD = '#C1A364';
+  const NAVY = '#0A1A2F';
+
+  const generateChart = async () => {
+    const apiKey = localStorage.getItem('_ak');
+    if (!apiKey) { setError('Set your API key first'); return; }
+    setLoading(true); setError('');
+    try {
+      const allText = [c_content.title, c_content.tagline, ...(c_content.sections||[]).map(s=>s.content)].filter(Boolean).join(' ');
+      const resp = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+        body: JSON.stringify({
+          model: 'claude-haiku-4-5-20251001', max_tokens: 8000,
+          system: 'You are a financial data visualisation expert. Extract the most compelling quantitative story and return ONLY valid JSON. No markdown. CRITICAL: ALL values in the data array MUST use the same unit and scale. Choose 4-8 data points that span a meaningful range.',
+          messages: [{ role: 'user', content: `Extract the best chart from this investment content. Return JSON only:\n{"title":"punchy chart title stating the finding","subtitle":"one sentence explaining what this shows","type":"bar","xKey":"x axis label","yKey":"y axis label with unit","unit":"% or bp or x or $B","data":[{"name":"label","value":number}],"insight":"the single most important takeaway","source":"source if mentioned"}\n\nContent:\n${allText.slice(0, 2500)}` }]
+      })
+      });
+      const data = await resp.json();
+      const text = (data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('');
+      const match = text.match(/\{[\s\S]*\}/);
+      if (!match) { setError('Could not parse chart data'); setLoading(false); return; }
+      const parsed = JSON.parse(match[0]);
+      if (parsed.data && parsed.data.length > 0) { setChartData(parsed); setChartType(parsed.type || 'bar'); }
+      else { setError('No chart data found in content'); }
+    } catch(e) { setError('Error: ' + e.message); }
+    setLoading(false);
+  };
+
+  const CustomTooltip = ({ active, payload, label }) => {
+    if (!active || !payload?.length) return null;
+    return (
+      <div style={{ background: 'rgba(10,26,47,0.95)', border: '1px solid rgba(193,163,100,0.4)', borderRadius: 8, padding: '10px 14px', fontSize: 12 }}>
+        <div style={{ color: GOLD, fontWeight: 700, marginBottom: 4 }}>{label}</div>
+        {payload.map((p, i) => <div key={i} style={{ color: '#fff' }}>{p.name}: <strong>{p.value}{chartData?.unit||''}</strong></div>)}
+      </div>
+    );
+  };
+
+  const COLORS = [GOLD, '#5B8DB8', '#7CB87C', '#C17A6B', '#9B7BC1', '#B8B85B'];
+
+  const renderChart = () => {
+    if (!chartData?.data) return null;
+    const data = chartData.data;
+    const allVals = data.map(d => d.value || 0);
+    const minV = Math.min(...allVals);
+    const maxV = Math.max(...allVals);
+    const domain = [minV > 0 ? 0 : Math.floor(minV * 1.1), Math.ceil(maxV * 1.15)];
+    const common = { data, margin: { top: 20, right: 30, left: 10, bottom: 60 } };
+    const xAxis = <XAxis dataKey="name" tick={{ fill: '#444', fontSize: 11 }} angle={-30} textAnchor="end" height={70} />;
+    const yAxis = <YAxis tick={{ fill: '#666', fontSize: 10 }} unit={chartData.unit||''} domain={domain} tickCount={6} />;
+    const grid = <CartesianGrid strokeDasharray="3 3" stroke="#E8E8E8" />;
+    const tooltip = <Tooltip content={<CustomTooltip />} />;
+    if (chartType === 'line') return (
+      <LineChart {...common}>{grid}{xAxis}{yAxis}{tooltip}
+        <Line type="monotone" dataKey="value" stroke={GOLD} strokeWidth={3} dot={{ fill: GOLD, r: 5 }} activeDot={{ r: 8 }} />
+      </LineChart>
+    );
+    if (chartType === 'area') return (
+      <AreaChart {...common}>{grid}{xAxis}{yAxis}{tooltip}
+        <defs><linearGradient id="goldGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor={GOLD} stopOpacity={0.4}/><stop offset="95%" stopColor={GOLD} stopOpacity={0.02}/></linearGradient></defs>
+        <Area type="monotone" dataKey="value" stroke={GOLD} strokeWidth={2} fill="url(#goldGrad)" />
+      </AreaChart>
+    );
+    return (
+      <BarChart {...common}>{grid}{xAxis}{yAxis}{tooltip}
+        <Bar dataKey="value" radius={[4,4,0,0]}>{data.map((_,i) => <Cell key={i} fill={COLORS[i%COLORS.length]} fillOpacity={0.9} />)}</Bar>
+      </BarChart>
+    );
+  };
+
+  return (
+    <div style={{ fontFamily: 'Arial, sans-serif', width: '100%', minHeight: '100%', background: '#fff', boxSizing: 'border-box' }}>
+      <div style={{ padding: '20px 40px', borderBottom: '1px solid #E8E0D0', background: NAVY, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div>
+          <div style={{ fontSize: 9, fontWeight: 700, color: GOLD, textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: 6 }}>J.P. Morgan Private Bank · Visual Story</div>
+          <div style={{ fontSize: 22, fontWeight: 400, color: '#fff' }}>{c_content.title || 'Untitled'}</div>
+        </div>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          {chartData && ['bar','line','area'].map(t => (
+            <button key={t} onClick={() => setChartType(t)} style={{ padding: '5px 10px', borderRadius: 4, border: '1px solid ' + (chartType===t ? GOLD : 'rgba(255,255,255,0.2)'), background: chartType===t ? GOLD : 'transparent', color: chartType===t ? NAVY : 'rgba(255,255,255,0.6)', fontSize: 10, cursor: 'pointer', fontWeight: 600 }}>
+              {t==='bar'?'▋ Bar':t==='line'?'╱ Line':'◱ Area'}
+            </button>
+          ))}
+          <button onClick={generateChart} disabled={loading} style={{ padding: '10px 22px', borderRadius: 6, border: '1px solid ' + GOLD, background: loading ? '#fff' : GOLD, color: loading ? GOLD : '#fff', fontSize: 12, cursor: loading ? 'wait' : 'pointer', fontWeight: 700 }}>
+            {loading ? '⏳' : chartData ? '↻ Regenerate' : '✨ Generate Visual Story'}
+          </button>
+        </div>
+      </div>
+      {error && <div style={{ margin: '16px 40px', padding: '10px 14px', background: '#FFF1F1', border: '1px solid #FECACA', borderRadius: 6, color: '#DC2626', fontSize: 12 }}>{error}</div>}
+      {!chartData && !loading && (
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '80px 40px', textAlign: 'center' }}>
+          <div style={{ fontSize: 48, marginBottom: 20, opacity: 0.2 }}>📊</div>
+          <div style={{ fontSize: 18, color: '#555', marginBottom: 8 }}>Generate a visual story from your content</div>
+          <div style={{ fontSize: 13, color: '#aaa', maxWidth: 360 }}>The AI reads your written piece and extracts the key quantitative story, then renders it as an interactive chart</div>
+        </div>
+      )}
+      {loading && (
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '80px 40px' }}>
+          <div style={{ fontSize: 36, marginBottom: 16 }}>⏳</div>
+          <div style={{ fontSize: 16, color: '#555' }}>Reading your content and building the visual...</div>
+        </div>
+      )}
+      {chartData && !loading && (
+        <div style={{ padding: '32px 40px' }}>
+          <div style={{ marginBottom: 24 }}>
+            <div style={{ fontSize: 18, fontWeight: 400, color: NAVY, marginBottom: 6 }}>{chartData.title}</div>
+            <div style={{ fontSize: 13, color: '#888' }}>{chartData.subtitle}</div>
+          </div>
+          <div style={{ background: '#FAFAFA', border: '1px solid #E8E0D0', borderRadius: 12, padding: '24px 8px 8px', marginBottom: 20 }}>
+            <ResponsiveContainer width="100%" height={360}>{renderChart()}</ResponsiveContainer>
+          </div>
+          {chartData.source && <div style={{ fontSize: 10, color: '#aaa', marginBottom: 12 }}>Source: {chartData.source}</div>}
+          {chartData.insight && (
+            <div style={{ background: '#FFF9EE', borderLeft: '3px solid ' + GOLD, borderRadius: '0 8px 8px 0', padding: '12px 16px', fontSize: 14, color: NAVY, fontStyle: 'italic', lineHeight: 1.6 }}>
+              💡 {chartData.insight}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
 
 const WhatsAppPreviewContent = ({ c_content, templateName }) => {
   const title = c_content.title || 'Untitled';
@@ -8782,7 +8898,12 @@ ${sectionsText}`;
         const merged = parsed.sections.map(s => s.content).filter(Boolean).join(' ');
         finalParsed = { ...finalParsed, sections: [{ id: 'headline', title: 'Headline View', content: merged }] };
       }
-      updateTemplateContent(activeTemplate, finalParsed);
+      // For I&I: force full replacement so new sections/charts fully replace old content
+      if (activeTemplate === 'ideasInsights') {
+        setTemplateContents(prev => ({ ...prev, [activeTemplate]: { ...finalParsed } }));
+      } else {
+        updateTemplateContent(activeTemplate, finalParsed);
+      }
       setSaveStatus('unsaved');
 
     } catch (err) {
