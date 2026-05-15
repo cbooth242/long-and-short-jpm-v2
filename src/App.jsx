@@ -52,7 +52,7 @@ function parseTagged(text) {
   if (summaryM) result.summary = summaryM[1].trim();
   const taglineM = text.match(/<TAGLINE>([\s\S]*?)<\/TAGLINE>/);
   if (taglineM) result.tagline = taglineM[1].trim();
-  const re = /<SECTION id="([^"]+)" title="([^"]+)">([\s\S]*?)<\/SECTION>/g;
+  const re = /<SECTION[^>]+id=["']([^"']+)["'][^>]+title=["']([^"']+)["'][^>]*>([\s\S]*?)<\/SECTION>/g;
   let m;
   while ((m = re.exec(text)) !== null) {
     sections.push({ id: m[1].trim(), title: m[2].trim(), content: m[3].trim() });
@@ -1538,9 +1538,9 @@ ${getXmlStructure()}`;
 
 // ── EMAIL PREVIEW COMPONENT ───────────────────────────────────────────────────
 const SnippetsContent = ({ c_content }) => {
-  const [snippets, setSnippets] = React.useState(null);
+  const [bullets, setBullets] = React.useState(null);
   const [loading, setLoading] = React.useState(false);
-  const hasContent = (c_content.sections||[]).some(s => s.content);
+  const hasContent = (c_content.sections||[]).some(s => s.content?.trim());
 
   const generate = async () => {
     const apiKey = localStorage.getItem('_ak');
@@ -1552,50 +1552,50 @@ const SnippetsContent = ({ c_content }) => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
         body: JSON.stringify({
-          model: 'claude-haiku-4-5-20251001', max_tokens: 400,
-          system: 'Extract 3 punchy, dinner-party talking points from investment content. Return ONLY a JSON array of 3 strings. Each: one sentence, max 18 words, sounds smart and interesting, no jargon, no "JPMorgan says". Direct and opinionated.',
-          messages: [{ role: 'user', content: 'Extract 3 talking points from:\n\n' + allText.slice(0, 2000) }]
+          model: 'claude-haiku-4-5-20251001', max_tokens: 300,
+          messages: [{
+            role: 'user',
+            content: 'Extract 3 punchy, interesting talking points from this investment content. Return ONLY a JSON array of 3 strings. Each string must be one sentence, max 18 words, opinionated, no jargon, no "JPMorgan says". Sound smart at a dinner party.\n\nContent:\n' + allText.slice(0, 2000)
+          }]
         })
       });
       const data = await resp.json();
-      const text = (data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('');
-      const match = text.match(/\[[\s\S]*\]/);
-      if (match) setSnippets(JSON.parse(match[0]));
+      const text = (data.content||[]).map(b=>b.text||'').join('');
+      const match = text.match(/\[[\s\S]*?\]/);
+      if (match) setBullets(JSON.parse(match[0]));
     } catch(e) { console.error(e); }
     setLoading(false);
   };
 
-  React.useEffect(() => { setSnippets(null); }, [c_content.title]);
+  React.useEffect(() => { setBullets(null); }, [c_content.title]);
 
   return (
-    <div style={{ fontFamily: 'Georgia, serif', width: '100%', minHeight: '100%', background: '#fff' }}>
-      {/* JPM banner */}
-      <div style={{ background: '#0A1A2F', padding: '14px 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+    <div style={{ fontFamily: 'Georgia, serif', width: '100%', minHeight: '100%', background: '#fff', display: 'flex', flexDirection: 'column' }}>
+      {/* JPM banner only */}
+      <div style={{ background: '#0A1A2F', padding: '14px 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
         <div style={{ fontSize: 11, fontWeight: 700, color: '#C1A364', textTransform: 'uppercase', letterSpacing: '0.15em' }}>J.P. Morgan Private Bank</div>
-        <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Snippets</div>
       </div>
-
-      <div style={{ padding: '36px 40px' }}>
-        {!snippets && !loading && (
-          <div style={{ textAlign: 'center', paddingTop: 24 }}>
-            <button onClick={generate} disabled={!hasContent}
-              style={{ padding: '10px 24px', borderRadius: 6, border: 'none', background: hasContent ? '#0A1A2F' : '#E5E7EB', color: hasContent ? '#fff' : '#9CA3AF', fontSize: 13, cursor: hasContent ? 'pointer' : 'default', fontFamily: 'Georgia, serif' }}>
-              {hasContent ? 'Generate Snippets' : 'Write content first'}
-            </button>
-          </div>
+      {/* Three bullets — nothing else */}
+      <div style={{ padding: '44px 48px', flex: 1 }}>
+        {!bullets && !loading && (
+          <button onClick={generate} disabled={!hasContent}
+            style={{ padding: '10px 22px', borderRadius: 5, border: 'none', background: hasContent ? '#0A1A2F' : '#E5E7EB', color: hasContent ? '#fff' : '#9CA3AF', fontSize: 13, cursor: hasContent ? 'pointer' : 'default' }}>
+            {hasContent ? 'Generate' : 'Write content first'}
+          </button>
         )}
-        {loading && <div style={{ textAlign: 'center', color: '#888', fontSize: 14, paddingTop: 24 }}>Generating...</div>}
-        {snippets && (
+        {loading && <div style={{ color: '#aaa', fontSize: 14 }}>...</div>}
+        {bullets && (
           <div>
-            <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-              {snippets.map((s, i) => (
-                <li key={i} style={{ display: 'flex', gap: 16, marginBottom: 28, alignItems: 'flex-start' }}>
-                  <span style={{ color: '#C1A364', fontWeight: 700, fontSize: 15, flexShrink: 0, paddingTop: 3 }}>·</span>
-                  <p style={{ fontSize: 17, lineHeight: 1.65, color: '#0A1A2F', margin: 0 }}>{s}</p>
-                </li>
-              ))}
-            </ul>
-            <button onClick={() => setSnippets(null)} style={{ marginTop: 20, fontSize: 11, color: '#C1A364', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'Georgia, serif' }}>↺ Regenerate</button>
+            {bullets.map((b, i) => (
+              <div key={i} style={{ display: 'flex', gap: 18, marginBottom: 32, alignItems: 'flex-start' }}>
+                <div style={{ width: 2, height: 24, background: '#C1A364', flexShrink: 0, marginTop: 4 }} />
+                <p style={{ fontSize: 19, lineHeight: 1.6, color: '#0A1A2F', margin: 0, fontWeight: 400 }}>{b}</p>
+              </div>
+            ))}
+            <button onClick={() => setBullets(null)}
+              style={{ marginTop: 8, fontSize: 11, color: '#C1A364', background: 'none', border: 'none', cursor: 'pointer' }}>
+              ↺ Regenerate
+            </button>
           </div>
         )}
       </div>
@@ -1611,238 +1611,68 @@ const EmailPreviewContent = ({ c_content, templateName, metadata }) => {
   const team = metadata?.team || 'GIS';
 
   return (
-    <div style={{ display: 'flex', height: '100%', fontFamily: 'Segoe UI, Arial, sans-serif', background: '#F3F2F1', minHeight: 600 }}>
-      {/* Outlook-style left sidebar */}
-      <div style={{ width: 260, flexShrink: 0, background: '#fff', borderRight: '1px solid #E1DFDD', display: 'flex', flexDirection: 'column' }}>
-        {/* Inbox header */}
-        <div style={{ padding: '12px 16px', background: '#0078D4', color: '#fff' }}>
-          <div style={{ fontSize: 13, fontWeight: 600 }}>Inbox</div>
-          <div style={{ fontSize: 10, opacity: 0.8, marginTop: 1 }}>gis-content@jpmorgan.com</div>
-        </div>
-        {/* Folders */}
-        {['Inbox', 'Drafts', 'Sent Items', 'Deleted Items'].map((f, i) => (
-          <div key={f} style={{ padding: '8px 16px', fontSize: 12, color: i === 0 ? '#0078D4' : '#444', background: i === 0 ? '#EFF6FC' : 'transparent', fontWeight: i === 0 ? 600 : 400, borderLeft: i === 0 ? '3px solid #0078D4' : '3px solid transparent', cursor: 'pointer' }}>{f}</div>
-        ))}
-        <div style={{ borderTop: '1px solid #E1DFDD', marginTop: 8 }} />
-        {/* Email list item - current email */}
-        <div style={{ padding: '10px 16px', background: '#DEECF9', borderLeft: '3px solid #0078D4', cursor: 'pointer' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: '#0A1A2F' }}>JPM Private Bank GIS</div>
-            <div style={{ fontSize: 9, color: '#666' }}>{new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}</div>
+    <div style={{ width: '100%', height: '100%', background: '#E8E8E8', padding: '28px', boxSizing: 'border-box', fontFamily: 'Arial, Helvetica, sans-serif', overflowY: 'auto' }}>
+      {/* Single email body — full width */}
+      <div style={{ background: '#fff', width: '100%', boxSizing: 'border-box' }}>
+        {/* Email client header row */}
+        <div style={{ padding: '14px 28px', borderBottom: '1px solid #e5e7eb', background: '#f9fafb' }}>
+          <div style={{ display: 'flex', gap: 8, marginBottom: 5 }}>
+            <span style={{ fontSize: 11, color: '#999', width: 60, flexShrink: 0 }}>From:</span>
+            <span style={{ fontSize: 11, color: '#222', fontWeight: 600 }}>JPMorgan Private Bank GIS &lt;gis-content@jpmorgan.com&gt;</span>
           </div>
-          <div style={{ fontSize: 11, fontWeight: 600, color: '#0A1A2F', marginBottom: 2, lineHeight: 1.3 }}>{title.slice(0, 45)}{title.length > 45 ? '...' : ''}</div>
-          <div style={{ fontSize: 10, color: '#666', lineHeight: 1.4 }}>{sections[0]?.content?.slice(0, 60)}...</div>
-        </div>
-        {/* Ghost emails below */}
-        {[{ from: 'Markets Research', subj: 'Weekly Macro Digest', time: 'Yesterday' }, { from: 'Investment Solutions', subj: 'Portfolio Review Q2', time: 'Mon' }, { from: 'GIS Team', subj: 'Forward Look — June', time: 'Mon' }].map((e, i) => (
-          <div key={i} style={{ padding: '10px 16px', borderLeft: '3px solid transparent', cursor: 'pointer', borderBottom: '1px solid #F3F2F1' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 2 }}>
-              <div style={{ fontSize: 11, fontWeight: 600, color: '#333' }}>{e.from}</div>
-              <div style={{ fontSize: 9, color: '#999' }}>{e.time}</div>
-            </div>
-            <div style={{ fontSize: 10, color: '#555' }}>{e.subj}</div>
+          <div style={{ display: 'flex', gap: 8, marginBottom: 5 }}>
+            <span style={{ fontSize: 11, color: '#999', width: 60, flexShrink: 0 }}>To:</span>
+            <span style={{ fontSize: 11, color: '#555' }}>Your Client Advisory Team</span>
           </div>
-        ))}
-      </div>
-
-      {/* Reading pane */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-        {/* Reading pane toolbar */}
-        <div style={{ background: '#fff', borderBottom: '1px solid #E1DFDD', padding: '6px 20px', display: 'flex', gap: 16, alignItems: 'center' }}>
-          {['Reply', 'Reply All', 'Forward', 'Archive', 'Delete'].map(a => (
-            <span key={a} style={{ fontSize: 11, color: '#0078D4', cursor: 'pointer', fontWeight: a === 'Reply' ? 600 : 400 }}>{a}</span>
-          ))}
-          <div style={{ flex: 1 }} />
-          <span style={{ fontSize: 10, color: '#999' }}>{date}</span>
-        </div>
-
-        {/* Email content */}
-        <div style={{ flex: 1, overflowY: 'auto', background: '#F3F2F1', padding: '20px 24px' }}>
-          {/* Email card */}
-          <div style={{ background: '#fff', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', width: '100%' }}>
-            {/* Email header in reading pane */}
-            <div style={{ padding: '16px 24px', borderBottom: '1px solid #E1DFDD' }}>
-              <div style={{ fontSize: 18, fontWeight: 400, color: '#0A1A2F', fontFamily: 'Georgia, serif', marginBottom: 10, lineHeight: 1.35 }}>{title}</div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <div style={{ width: 36, height: 36, borderRadius: '50%', background: '#0A1A2F', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <span style={{ color: '#C1A364', fontSize: 12, fontWeight: 700 }}>JP</span>
-                </div>
-                <div>
-                  <div style={{ fontSize: 12, fontWeight: 600, color: '#0A1A2F' }}>JPMorgan Private Bank GIS <span style={{ fontWeight: 400, color: '#666' }}>&lt;gis-content@jpmorgan.com&gt;</span></div>
-                  <div style={{ fontSize: 11, color: '#666' }}>To: Your Client Advisory Team &nbsp;·&nbsp; {date}</div>
-                </div>
-              </div>
-            </div>
-
-            {/* JPM branded email body */}
-            <div style={{ background: '#0A1A2F', padding: '14px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div style={{ fontSize: 11, color: '#C1A364', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em' }}>J.P. Morgan Private Bank</div>
-              <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{templateName} · {team}</div>
-            </div>
-            <div style={{ height: 3, background: 'linear-gradient(90deg, #C1A364, #D4B87A, #C1A364)' }} />
-
-            <div style={{ padding: '24px 28px' }}>
-              {c_content.tagline && (
-                <p style={{ fontSize: 15, color: '#4A5568', fontStyle: 'italic', margin: '0 0 20px', paddingBottom: 18, borderBottom: '1px solid #E5E7EB', lineHeight: 1.6, fontFamily: 'Georgia, serif' }}>{c_content.tagline}</p>
-              )}
-              {sections.length === 0 && (
-                <p style={{ color: '#9CA3AF', fontSize: 13, fontStyle: 'italic' }}>No content yet — write your piece in the editor first.</p>
-              )}
-              {sections.map((s, i) => (
-                <div key={i} style={{ marginBottom: 18 }}>
-                  {s.title && <div style={{ fontSize: 10, fontWeight: 700, color: '#C1A364', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 5 }}>{s.title}</div>}
-                  <p style={{ fontSize: 14, lineHeight: 1.8, color: '#374151', margin: 0, fontFamily: 'Georgia, serif' }}>{s.content}</p>
-                  {i < sections.length - 1 && <div style={{ borderBottom: '1px solid #F3F4F6', marginTop: 16 }} />}
-                </div>
-              ))}
-              <div style={{ textAlign: 'center', marginTop: 24, paddingTop: 18, borderTop: '1px solid #E5E7EB' }}>
-                <div style={{ display: 'inline-block', background: '#0A1A2F', color: '#fff', padding: '10px 24px', fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', cursor: 'pointer' }}>Read Full Piece →</div>
-              </div>
-            </div>
-
-            <div style={{ background: '#F9FAFB', borderTop: '1px solid #E5E7EB', padding: '14px 28px' }}>
-              <p style={{ fontSize: 10, color: '#9CA3AF', margin: 0, lineHeight: 1.6 }}>
-                This communication is for informational purposes only. J.P. Morgan Private Bank &nbsp;·&nbsp; © {new Date().getFullYear()} JPMorgan Chase & Co. &nbsp;
-                <span style={{ color: '#C1A364' }}>Unsubscribe</span> &nbsp;|&nbsp; <span style={{ color: '#C1A364' }}>Privacy Policy</span>
-              </p>
-            </div>
+          <div style={{ display: 'flex', gap: 8, marginBottom: 5 }}>
+            <span style={{ fontSize: 11, color: '#999', width: 60, flexShrink: 0 }}>Subject:</span>
+            <span style={{ fontSize: 11, color: '#222', fontWeight: 600 }}>{title}</span>
+          </div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <span style={{ fontSize: 11, color: '#999', width: 60, flexShrink: 0 }}>Date:</span>
+            <span style={{ fontSize: 11, color: '#555' }}>{date}</span>
           </div>
         </div>
-      </div>
-    </div>
-  );
-};
-
-
-const VisualChartContent = ({ c_content, templateName }) => {
-  const [chartData, setChartData] = React.useState(null);
-  const [loading, setLoading] = React.useState(false);
-  const [error, setError] = React.useState('');
-  const [chartType, setChartType] = React.useState('bar');
-
-  const GOLD = '#C1A364';
-  const NAVY = '#0A1A2F';
-
-  const generateChart = async () => {
-    const apiKey = localStorage.getItem('_ak');
-    if (!apiKey) { setError('Set your API key first'); return; }
-    setLoading(true); setError('');
-    try {
-      const allText = [c_content.title, c_content.tagline, ...(c_content.sections||[]).map(s=>s.content)].filter(Boolean).join(' ');
-      const resp = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
-        body: JSON.stringify({
-          model: 'claude-haiku-4-5-20251001', max_tokens: 8000,
-          system: 'You are a financial data visualisation expert. Extract the most compelling quantitative story and return ONLY valid JSON. No markdown. CRITICAL: ALL values in the data array MUST use the same unit and scale. Choose 4-8 data points that span a meaningful range.',
-          messages: [{ role: 'user', content: `Extract the best chart from this investment content. Return JSON only:\n{"title":"punchy chart title stating the finding","subtitle":"one sentence explaining what this shows","type":"bar","xKey":"x axis label","yKey":"y axis label with unit","unit":"% or bp or x or $B","data":[{"name":"label","value":number}],"insight":"the single most important takeaway","source":"source if mentioned"}\n\nContent:\n${allText.slice(0, 2500)}` }]
-      })
-      });
-      const data = await resp.json();
-      const text = (data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('');
-      const match = text.match(/\{[\s\S]*\}/);
-      if (!match) { setError('Could not parse chart data'); setLoading(false); return; }
-      const parsed = JSON.parse(match[0]);
-      if (parsed.data && parsed.data.length > 0) { setChartData(parsed); setChartType(parsed.type || 'bar'); }
-      else { setError('No chart data found in content'); }
-    } catch(e) { setError('Error: ' + e.message); }
-    setLoading(false);
-  };
-
-  const CustomTooltip = ({ active, payload, label }) => {
-    if (!active || !payload?.length) return null;
-    return (
-      <div style={{ background: 'rgba(10,26,47,0.95)', border: '1px solid rgba(193,163,100,0.4)', borderRadius: 8, padding: '10px 14px', fontSize: 12 }}>
-        <div style={{ color: GOLD, fontWeight: 700, marginBottom: 4 }}>{label}</div>
-        {payload.map((p, i) => <div key={i} style={{ color: '#fff' }}>{p.name}: <strong>{p.value}{chartData?.unit||''}</strong></div>)}
-      </div>
-    );
-  };
-
-  const COLORS = [GOLD, '#5B8DB8', '#7CB87C', '#C17A6B', '#9B7BC1', '#B8B85B'];
-
-  const renderChart = () => {
-    if (!chartData?.data) return null;
-    const data = chartData.data;
-    const allVals = data.map(d => d.value || 0);
-    const minV = Math.min(...allVals);
-    const maxV = Math.max(...allVals);
-    const domain = [minV > 0 ? 0 : Math.floor(minV * 1.1), Math.ceil(maxV * 1.15)];
-    const common = { data, margin: { top: 20, right: 30, left: 10, bottom: 60 } };
-    const xAxis = <XAxis dataKey="name" tick={{ fill: '#444', fontSize: 11 }} angle={-30} textAnchor="end" height={70} />;
-    const yAxis = <YAxis tick={{ fill: '#666', fontSize: 10 }} unit={chartData.unit||''} domain={domain} tickCount={6} />;
-    const grid = <CartesianGrid strokeDasharray="3 3" stroke="#E8E8E8" />;
-    const tooltip = <Tooltip content={<CustomTooltip />} />;
-    if (chartType === 'line') return (
-      <LineChart {...common}>{grid}{xAxis}{yAxis}{tooltip}
-        <Line type="monotone" dataKey="value" stroke={GOLD} strokeWidth={3} dot={{ fill: GOLD, r: 5 }} activeDot={{ r: 8 }} />
-      </LineChart>
-    );
-    if (chartType === 'area') return (
-      <AreaChart {...common}>{grid}{xAxis}{yAxis}{tooltip}
-        <defs><linearGradient id="goldGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor={GOLD} stopOpacity={0.4}/><stop offset="95%" stopColor={GOLD} stopOpacity={0.02}/></linearGradient></defs>
-        <Area type="monotone" dataKey="value" stroke={GOLD} strokeWidth={2} fill="url(#goldGrad)" />
-      </AreaChart>
-    );
-    return (
-      <BarChart {...common}>{grid}{xAxis}{yAxis}{tooltip}
-        <Bar dataKey="value" radius={[4,4,0,0]}>{data.map((_,i) => <Cell key={i} fill={COLORS[i%COLORS.length]} fillOpacity={0.9} />)}</Bar>
-      </BarChart>
-    );
-  };
-
-  return (
-    <div style={{ fontFamily: 'Arial, sans-serif', width: '100%', minHeight: '100%', background: '#fff', boxSizing: 'border-box' }}>
-      <div style={{ padding: '20px 40px', borderBottom: '1px solid #E8E0D0', background: NAVY, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div>
-          <div style={{ fontSize: 9, fontWeight: 700, color: GOLD, textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: 6 }}>J.P. Morgan Private Bank · Visual Story</div>
-          <div style={{ fontSize: 22, fontWeight: 400, color: '#fff' }}>{c_content.title || 'Untitled'}</div>
+        {/* JPM branded header */}
+        <div style={{ background: '#0A1A2F', padding: '18px 28px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ fontSize: 12, color: '#C1A364', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em' }}>J.P. Morgan Private Bank</div>
+          <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{templateName} · {team} · {date}</div>
         </div>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-          {chartData && ['bar','line','area'].map(t => (
-            <button key={t} onClick={() => setChartType(t)} style={{ padding: '5px 10px', borderRadius: 4, border: '1px solid ' + (chartType===t ? GOLD : 'rgba(255,255,255,0.2)'), background: chartType===t ? GOLD : 'transparent', color: chartType===t ? NAVY : 'rgba(255,255,255,0.6)', fontSize: 10, cursor: 'pointer', fontWeight: 600 }}>
-              {t==='bar'?'▋ Bar':t==='line'?'╱ Line':'◱ Area'}
-            </button>
-          ))}
-          <button onClick={generateChart} disabled={loading} style={{ padding: '10px 22px', borderRadius: 6, border: '1px solid ' + GOLD, background: loading ? '#fff' : GOLD, color: loading ? GOLD : '#fff', fontSize: 12, cursor: loading ? 'wait' : 'pointer', fontWeight: 700 }}>
-            {loading ? '⏳' : chartData ? '↻ Regenerate' : '✨ Generate Visual Story'}
-          </button>
-        </div>
-      </div>
-      {error && <div style={{ margin: '16px 40px', padding: '10px 14px', background: '#FFF1F1', border: '1px solid #FECACA', borderRadius: 6, color: '#DC2626', fontSize: 12 }}>{error}</div>}
-      {!chartData && !loading && (
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '80px 40px', textAlign: 'center' }}>
-          <div style={{ fontSize: 48, marginBottom: 20, opacity: 0.2 }}>📊</div>
-          <div style={{ fontSize: 18, color: '#555', marginBottom: 8 }}>Generate a visual story from your content</div>
-          <div style={{ fontSize: 13, color: '#aaa', maxWidth: 360 }}>The AI reads your written piece and extracts the key quantitative story, then renders it as an interactive chart</div>
-        </div>
-      )}
-      {loading && (
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '80px 40px' }}>
-          <div style={{ fontSize: 36, marginBottom: 16 }}>⏳</div>
-          <div style={{ fontSize: 16, color: '#555' }}>Reading your content and building the visual...</div>
-        </div>
-      )}
-      {chartData && !loading && (
-        <div style={{ padding: '32px 40px' }}>
-          <div style={{ marginBottom: 24 }}>
-            <div style={{ fontSize: 18, fontWeight: 400, color: NAVY, marginBottom: 6 }}>{chartData.title}</div>
-            <div style={{ fontSize: 13, color: '#888' }}>{chartData.subtitle}</div>
-          </div>
-          <div style={{ background: '#FAFAFA', border: '1px solid #E8E0D0', borderRadius: 12, padding: '24px 8px 8px', marginBottom: 20 }}>
-            <ResponsiveContainer width="100%" height={360}>{renderChart()}</ResponsiveContainer>
-          </div>
-          {chartData.source && <div style={{ fontSize: 10, color: '#aaa', marginBottom: 12 }}>Source: {chartData.source}</div>}
-          {chartData.insight && (
-            <div style={{ background: '#FFF9EE', borderLeft: '3px solid ' + GOLD, borderRadius: '0 8px 8px 0', padding: '12px 16px', fontSize: 14, color: NAVY, fontStyle: 'italic', lineHeight: 1.6 }}>
-              💡 {chartData.insight}
-            </div>
+        <div style={{ height: 3, background: 'linear-gradient(90deg, #C1A364, #D4B87A, #C1A364)' }} />
+        {/* Body */}
+        <div style={{ padding: '32px 28px' }}>
+          <h1 style={{ fontFamily: 'Georgia, serif', fontSize: 26, fontWeight: 400, color: '#0A1A2F', margin: '0 0 10px', lineHeight: 1.3 }}>{title}</h1>
+          {c_content.tagline && (
+            <p style={{ fontSize: 14, color: '#6B7280', fontStyle: 'italic', margin: '0 0 24px', paddingBottom: 20, borderBottom: '1px solid #E5E7EB' }}>{c_content.tagline}</p>
           )}
+          {!c_content.tagline && <div style={{ borderBottom: '1px solid #E5E7EB', marginBottom: 24 }} />}
+          {sections.length === 0 && (
+            <p style={{ color: '#9CA3AF', fontSize: 13, fontStyle: 'italic' }}>No content yet — write your piece in the editor first.</p>
+          )}
+          {sections.map((s, i) => (
+            <div key={i} style={{ marginBottom: 22 }}>
+              {s.title && <div style={{ fontSize: 11, fontWeight: 700, color: '#C1A364', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>{s.title}</div>}
+              <p style={{ fontSize: 14, lineHeight: 1.8, color: '#374151', margin: 0, fontFamily: 'Georgia, serif' }}>{s.content}</p>
+              {i < sections.length - 1 && <div style={{ borderBottom: '1px solid #F3F4F6', marginTop: 20 }} />}
+            </div>
+          ))}
+          <div style={{ textAlign: 'center', marginTop: 32, paddingTop: 20, borderTop: '1px solid #E5E7EB' }}>
+            <div style={{ display: 'inline-block', background: '#0A1A2F', color: '#fff', padding: '12px 32px', fontSize: 12, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', cursor: 'pointer' }}>Read Full Piece →</div>
+          </div>
         </div>
-      )}
+        {/* Footer */}
+        <div style={{ background: '#F9FAFB', borderTop: '1px solid #E5E7EB', padding: '16px 28px' }}>
+          <p style={{ fontSize: 10, color: '#9CA3AF', margin: 0, lineHeight: 1.6 }}>
+            This communication is for informational purposes only. J.P. Morgan Private Bank · © {new Date().getFullYear()} JPMorgan Chase & Co.
+            &nbsp;|&nbsp;<span style={{ color: '#C1A364', cursor: 'pointer' }}>Unsubscribe</span>
+            &nbsp;|&nbsp;<span style={{ color: '#C1A364', cursor: 'pointer' }}>Privacy Policy</span>
+          </p>
+        </div>
+      </div>
     </div>
   );
 };
+
 
 const WhatsAppPreviewContent = ({ c_content, templateName }) => {
   const title = c_content.title || 'Untitled';
@@ -2823,7 +2653,15 @@ const OutputPreviewPanel = ({ isOpen, onClose, templateName, templateId, content
         </div>
 
         {/* Preview Area — WhatsApp/Chart bypass the device chrome wrapper */}
-        {device === 'whatsapp' ? (
+        {device === 'snippets' ? (
+          <div style={{ flex: 1, overflow: 'auto', background: '#fff' }}>
+            <SnippetsContent c_content={c_content} />
+          </div>
+        ) : device === 'email' ? (
+          <div style={{ flex: 1, overflow: 'auto' }}>
+            <EmailPreviewContent c_content={c_content} templateName={templateName} metadata={m} />
+          </div>
+        ) : device === 'whatsapp' ? (
           <div style={{ flex: 1, overflow: 'auto', background: '#111', display: 'flex', justifyContent: 'center' }}>
             <WhatsAppPreviewContent c_content={c_content} templateName={templateName} />
           </div>
@@ -2869,9 +2707,7 @@ const OutputPreviewPanel = ({ isOpen, onClose, templateName, templateId, content
               )}
               {/* Content */}
               <div style={{ padding: isMobile ? 16 : '24px 32px', maxWidth: 'none', margin: 0 }}>
-                {device === 'email'
-                  ? <EmailPreviewContent c_content={c_content} templateName={templateName} metadata={m} />
-                  : device === 'pdf'
+                {device === 'pdf'
                   ? <ArticleContent isMobile={false} isEmail={false} isPDF={true} />
                   : templateId === 'videoPublish'
                   ? <VideoArticleContent isMobile={isMobile} />
@@ -8916,7 +8752,11 @@ ${sectionsText}`;
       if (activeTemplate === 'ideasInsights') {
         setTemplateContents(prev => ({ ...prev, [activeTemplate]: { ...finalParsed } }));
       } else {
+      if (activeTemplate === 'ideasInsights') {
+        setTemplateContents(prev => ({ ...prev, [activeTemplate]: { ...finalParsed } }));
+      } else {
         updateTemplateContent(activeTemplate, finalParsed);
+      }
       }
       setSaveStatus('unsaved');
 
