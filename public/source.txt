@@ -1988,10 +1988,19 @@ const OutputPreviewPanel = ({ isOpen, onClose, templateName, templateId, content
     const chartTitle = chart.title || '';
     const chartCaption = chart.caption || chart.source || '';
     if (!rawData.trim()) return null;
-    const rows = rawData.trim().split('\n').map(r => {
-      const parts = r.split(',');
-      return { label: parts[0]?.trim() || '', value: parseFloat(parts[1]) || 0 };
-    }).filter(r => r.label && !isNaN(r.value));
+    // Parse "Label:value,Label:value" or "Label,value\nLabel,value"
+    const hasColon = /[^,]+:[0-9.+-]/.test(rawData);
+    const rows = hasColon
+      ? rawData.split(',').map(s => s.trim()).filter(Boolean).map(pair => {
+          const ci = pair.lastIndexOf(':');
+          if (ci < 0) return null;
+          const v = parseFloat(pair.slice(ci + 1).trim());
+          return isNaN(v) ? null : { label: pair.slice(0, ci).trim(), value: v };
+        }).filter(Boolean)
+      : rawData.trim().split('\n').map(r => {
+          const parts = r.split(',');
+          return { label: parts[0]?.trim() || '', value: parseFloat(parts[1]) || 0 };
+        }).filter(r => r.label && !isNaN(r.value));
     if (rows.length === 0) return null;
 
     const maxVal = Math.max(...rows.map(r => r.value));
@@ -2992,10 +3001,23 @@ const IdeasChartSlot = ({ chart, idx, onChange, onRemove }) => {
   // Parse data series from comma-separated input
   const parseData = (raw) => {
     if (!raw) return [];
+    // Support both formats:
+    // "Label:value,Label:value" (AI output - colon separated, comma delimited)
+    // "Label,value\nLabel,value" (manual - comma separated, newline delimited)
+    const hasColonFormat = /[^,]+:[0-9.+-]/.test(raw);
+    if (hasColonFormat) {
+      return raw.split(',').map(s => s.trim()).filter(Boolean).map(pair => {
+        const colonIdx = pair.lastIndexOf(':');
+        if (colonIdx < 0) return null;
+        const label = pair.slice(0, colonIdx).trim();
+        const value = parseFloat(pair.slice(colonIdx + 1).trim());
+        return isNaN(value) ? null : { label, value, value2: null };
+      }).filter(Boolean);
+    }
     return raw.split('\n').filter(Boolean).map(line => {
       const parts = line.split(',').map(s => s.trim());
       return { label: parts[0] || '', value: parseFloat(parts[1]) || 0, value2: parseFloat(parts[2]) || null };
-    });
+    }).filter(r => r.label);
   };
   const data = parseData(chart.dataRaw);
   const hasData = data.length > 0;
@@ -8727,8 +8749,7 @@ CRITICAL RULES:
         raw += raw0;
       }
 
-      console.log('[II] raw length:', raw?.length, 'start:', raw?.slice(0, 150));
-      if (!raw) { setGenerateError('No response from API. Please try again.'); return; }
+      if (!raw) { setGenerateError('No response from API.'); return; }
 
 
       const parsed = parseTagged(raw);
