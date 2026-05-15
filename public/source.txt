@@ -52,10 +52,20 @@ function parseTagged(text) {
   if (summaryM) result.summary = summaryM[1].trim();
   const taglineM = text.match(/<TAGLINE>([\s\S]*?)<\/TAGLINE>/);
   if (taglineM) result.tagline = taglineM[1].trim();
-  const re = /<SECTION[^>]+id=["']([^"']+)["'][^>]+title=["']([^"']+)["'][^>]*>([\s\S]*?)<\/SECTION>/g;
+  // Robust section parser: handle any attribute order, apostrophes in titles, mixed quotes
+  const sectionTagRe = /<SECTION([^>]+)>([\s\S]*?)<\/SECTION>/g;
   let m;
-  while ((m = re.exec(text)) !== null) {
-    sections.push({ id: m[1].trim(), title: m[2].trim(), content: m[3].trim() });
+  while ((m = sectionTagRe.exec(text)) !== null) {
+    const attrs = m[1];
+    const content = m[2];
+    const idM = attrs.match(/\bid=["']?([^"'\s>]+)["']?/);
+    const titleM = attrs.match(/\btitle="([^"]*)"/) || attrs.match(/\btitle='([^']*)'/);
+    if (idM && titleM) {
+      sections.push({ id: idM[1].trim(), title: titleM[1].trim(), content: content.trim() });
+    } else if (idM) {
+      // fallback: use id as title if title extraction fails
+      sections.push({ id: idM[1].trim(), title: idM[1].trim(), content: content.trim() });
+    }
   }
   if (sections.length) result.sections = sections;
   // Parse CHART tags for I&I
