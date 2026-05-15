@@ -8659,54 +8659,34 @@ ${sectionsText}`;
       const apiKey = window.__ANTHROPIC_KEY || localStorage.getItem('_ak') || '';
 
       if (isII) {
-        // I&I: two-turn approach
-        // Turn 1: search and gather data (allow conversational response)
-        // Turn 2: force XML output from the gathered data
-        const iiResp1 = await fetch('https://api.anthropic.com/v1/messages', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
-          body: JSON.stringify({
-            model: 'claude-sonnet-4-20250514',
-            max_tokens: 4000,
-            system: 'You are a senior J.P. Morgan Private Bank GIS strategist and researcher. Search for current market data, prices, and analysis relevant to the topic. Summarise what you find — key data points, current prices, recent trends, analyst views. Be thorough.',
-            tools: [{ type: 'web_search_20250305', name: 'web_search' }],
-            messages: [{ role: 'user', content: 'Research this investment topic thoroughly.' + iiTopicHint + ' Find current data, prices, trends and analyst views. Summarise your findings.' }]
-          })
-        });
-        const iiData1 = await iiResp1.json();
-        if (iiData1.error) { setGenerateError('API error: ' + iiData1.error.message); return; }
-        // Extract text from all content blocks including tool results
-        let researchSummary = (iiData1.content || [])
-          .filter(b => b.type === 'text').map(b => b.text).join('');
-        // If no text blocks yet (model stopped at tool_use), extract from tool_result content
-        if (!researchSummary.trim()) {
-          researchSummary = (iiData1.content || [])
-            .filter(b => b.type === 'tool_result')
-            .flatMap(b => (b.content || []).filter(c => c.type === 'text').map(c => c.text))
-            .join('');
-        }
-        // Fallback: use the topic hint if research returned nothing
-        if (!researchSummary.trim()) {
-          researchSummary = 'Investment topic: ' + (iiTopicHint || 'general markets') + '. Use your knowledge to write the piece.';
-        }
-
-        // Turn 2: write the full I&I piece as XML — use assistant prefill to guarantee XML
-        const iiResp2 = await fetch('https://api.anthropic.com/v1/messages', {
+        // Single call with assistant prefill — no tools, model uses knowledge + topic context
+        // Tools caused Turn 1 to stop at tool_use block, never returning search results
+        const existingTitle2 = currentContent.title || '';
+        const topic = existingTitle2 || 'current market opportunities for UHNW investors';
+        const iiResp = await fetch('https://api.anthropic.com/v1/messages', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
           body: JSON.stringify({
             model: 'claude-sonnet-4-20250514',
             max_tokens: 16000,
-            system: 'You are a senior J.P. Morgan Private Bank GIS strategist. Write a full Ideas & Insights piece using the research provided. Output ONLY XML — no preamble, no explanation. Rules: (1) Section headings must be specific to this topic — never generic. (2) BOTH CHART tags required with real data. (3) Consistent units within each chart. (4) 1,200-2,000 words.',
+            system: `You are a senior J.P. Morgan Private Bank GIS strategist. Write a full Ideas & Insights investment piece.
+
+CRITICAL RULES:
+1. Output ONLY XML — the assistant turn starts with <TITLE> and must contain only XML tags.
+2. Write 3-5 SECTION tags with headings specific to this topic — NEVER use generic headings like "The Opportunity", "Our View", "The Setup".
+3. Include exactly 2 CHART tags with real plausible numerical data. Both charts are mandatory.
+4. All values in each chart must use consistent units (all %, all $B, all bp — never mix).
+5. 1,200-2,000 words across sections.
+6. Use specific data points, levels, and named sources throughout.`,
             messages: [
-              { role: 'user', content: 'Research findings:\n\n' + researchSummary + '\n\nWrite the full I&I piece as XML only.' },
+              { role: 'user', content: `Write a full J.P. Morgan Private Bank Ideas & Insights piece on this topic: ${topic}. Include JPM house view, supporting data, specific actionable guidance. Two charts with real data required.` },
               { role: 'assistant', content: '<TITLE>' }
             ]
           })
         });
-        const iiData2 = await iiResp2.json();
-        if (iiData2.error) { setGenerateError('API error: ' + iiData2.error.message); return; }
-        raw = '<TITLE>' + (iiData2.content || []).filter(b => b.type === 'text').map(b => b.text).join('');
+        const iiData = await iiResp.json();
+        if (iiData.error) { setGenerateError('API error: ' + iiData.error.message); return; }
+        raw = '<TITLE>' + (iiData.content || []).filter(b => b.type === 'text').map(b => b.text).join('');
       } else if (useSearch) {
         const chunk = await callClaude({
           model: 'claude-haiku-4-5-20251001',
