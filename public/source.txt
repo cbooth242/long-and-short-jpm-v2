@@ -1,3 +1,4 @@
+// Long & Short v2 — Build: 2026-05-15T16:41:53Z
 import React, { useState } from 'react';
 import { ResponsiveContainer, BarChart, LineChart, AreaChart, Bar, Line, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Cell } from 'recharts';
 import * as XLSX from 'xlsx';
