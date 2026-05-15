@@ -109,7 +109,7 @@ function parseTagged(text) {
     const ccapM = cattrs.match(/\bcaption="([^"]*)"/) || cattrs.match(/\bcaption='([^']*)'/);
     const dpMatch = cbody.match(/<DATAPOINTS>([\s\S]*?)<\/DATAPOINTS>/);
     if (cidM) {
-      charts.push({ id: cidM[1].trim(), title: ctM ? ctM[1].trim() : '', chartType: ctypeM ? ctypeM[1].trim() : 'Bar', yLabel: cyLM ? cyLM[1].trim() : '', source: csrcM ? csrcM[1].trim() : '', caption: ccapM ? ccapM[1].trim() : '', dataRaw: dpMatch ? dpMatch[1].trim() : '', position: charts.length === 0 ? 'data' : 'missing' });
+      charts.push({ id: cidM[1].trim(), title: ctM ? ctM[1].trim() : '', chartType: ctypeM ? ctypeM[1].trim() : 'Bar', yLabel: cyLM ? cyLM[1].trim() : '', source: csrcM ? csrcM[1].trim() : '', caption: ccapM ? ccapM[1].trim() : '', dataRaw: dpMatch ? dpMatch[1].trim() : '', position: charts.length === 0 ? 's2' : 's3' });
     }
   }
   if (charts.length) result.charts = charts;
@@ -1620,9 +1620,9 @@ const SnippetsContent = ({ c_content }) => {
 
   return (
     <div style={{ fontFamily: 'Georgia, serif', width: '100%', minHeight: '100%', background: '#fff', display: 'flex', flexDirection: 'column' }}>
-      {/* JPM banner only */}
-      <div style={{ background: '#0A1A2F', padding: '14px 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
-        <div style={{ fontSize: 11, fontWeight: 700, color: '#C1A364', textTransform: 'uppercase', letterSpacing: '0.15em' }}>J.P. Morgan Private Bank</div>
+      {/* Clean PDF-style header — no navy */}
+      <div style={{ padding: '24px 48px 16px', borderBottom: '2px solid #C1A364' }}>
+        <div style={{ fontSize: 9, fontWeight: 700, color: '#C1A364', textTransform: 'uppercase', letterSpacing: '0.2em' }}>J.P. Morgan Private Bank</div>
       </div>
       {/* Three bullets — nothing else */}
       <div style={{ padding: '44px 48px', flex: 1 }}>
@@ -2197,7 +2197,7 @@ const OutputPreviewPanel = ({ isOpen, onClose, templateName, templateId, content
           {/* Body sections */}
           <div style={{ maxWidth: 700, fontSize: isMobile ? 15 : 17, lineHeight: 1.85, color: jpm.gray700 }}>
             {sections.length > 0 ? sections.map((section, idx) => {
-              const chartsAfterThis = (c_content.charts || []).filter(ch => ch.position === section.id && (ch.data || ch.dataRaw));
+              const chartsAfterThis = (c_content.charts || []).filter(ch => (ch.position === section.id || ch.position === section.id.replace('s','').replace(/^/,'')) && (ch.data || ch.dataRaw));
               const isExec = idx === 0;
               const isView = section.id === 'view' || section.title?.toLowerCase().includes('our view');
               const isImplications = section.id === 'implications' || section.title?.toLowerCase().includes('implication') || section.title?.toLowerCase().includes('portfolio');
@@ -2582,7 +2582,7 @@ const OutputPreviewPanel = ({ isOpen, onClose, templateName, templateId, content
               const isCallout = /takeaway|view|summary|message|key|executive/i.test(section.title || '');
               const accentColor = /view|recommendation|positioning/i.test(section.title || '') ? jpm.gold : jpm.teal;
               // Charts positioned after this section (for Ideas & Insights)
-              const sectionCharts = (c_content.charts || []).filter(ch => ch.position === section.id && (ch.data || ch.dataRaw));
+              const sectionCharts = (c_content.charts || []).filter(ch => (ch.position === section.id || ch.position === section.id.replace('s','').replace(/^/,'')) && (ch.data || ch.dataRaw));
               
               return (
                 <div key={section.id || idx} style={{ marginBottom: 32 }}>
@@ -8739,17 +8739,30 @@ ${sectionsText}`;
           body: JSON.stringify({
             model: 'claude-sonnet-4-20250514',
             max_tokens: 16000,
-            system: `You are a senior J.P. Morgan Private Bank GIS strategist. Write a full Ideas & Insights investment piece.
+            system: `You are a senior J.P. Morgan Private Bank GIS strategist. Write a full Ideas & Insights piece. You MUST follow this EXACT XML structure — no prose, no markdown, only these tags:
 
-CRITICAL RULES:
-1. Output ONLY XML — the assistant turn starts with <TITLE> and must contain only XML tags.
-2. Write 3-5 SECTION tags with headings specific to this topic — NEVER use generic headings like "The Opportunity", "Our View", "The Setup".
-3. Include exactly 2 CHART tags with real plausible numerical data. Both charts are mandatory.
-4. All values in each chart must use consistent units (all %, all $B, all bp — never mix).
-5. 1,200-2,000 words across sections.
-6. Use specific data points, levels, and named sources throughout.`,
+<TITLE>compelling thesis-driven title</TITLE>
+<SUBTITLE>one sentence stating the investment insight</SUBTITLE>
+<SECTION id="s1" title="[specific heading for this topic]">
+300+ words of analysis. Lead with the insight, support with specific data points and levels. Multiple paragraphs separated by blank lines.
+</SECTION>
+<SECTION id="s2" title="[specific heading for this topic]">
+300+ words. The differentiated JPM view. What consensus is missing. Specific evidence.
+</SECTION>
+<SECTION id="s3" title="[specific heading for this topic]">
+200+ words. Specific actionable investment guidance with instruments, sizing, and levels.
+</SECTION>
+<CHART id="chart1" title="[title stating the finding]" type="Bar" yLabel="[axis label with unit]" source="[source, year]" caption="[what this shows]"><DATAPOINTS>Label1:value,Label2:value,Label3:value,Label4:value,Label5:value</DATAPOINTS></CHART>
+<CHART id="chart2" title="[title stating the finding]" type="Line" yLabel="[axis label with unit]" source="[source, year]" caption="[what this shows]"><DATAPOINTS>Label1:value,Label2:value,Label3:value,Label4:value,Label5:value</DATAPOINTS></CHART>
+
+RULES:
+- Each SECTION must have id and title attributes exactly as shown
+- CHART values must ALL use the same unit — never mix % with $ or bp
+- Both CHART tags are mandatory
+- Write 1,200-2,000 words across sections
+- Use specific data, levels, and named sources`,
             messages: [
-              { role: 'user', content: `Write a full J.P. Morgan Private Bank Ideas & Insights piece on this topic: ${topic}. Include JPM house view, supporting data, specific actionable guidance. Two charts with real data required.` },
+              { role: 'user', content: `Write a complete Ideas & Insights piece on: ${topic}. Use EXACTLY the XML structure from the system prompt. Include JPM house view, specific data with levels, actionable guidance. BOTH CHART tags required with Label:value format data. Start with <TITLE> already provided.` },
               { role: 'assistant', content: '<TITLE>' }
             ]
           })
