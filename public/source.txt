@@ -1165,7 +1165,7 @@ const AIDraftingPanel = ({ isOpen, onClose, templateName, templateId, content, o
     const prompts = {
       deskCommentary: "You are a senior J.P. Morgan Private Bank strategist. Write a Headline View: 100-150 words, lead with conclusion, direct active voice, JPM/Bridgewater style. Return only XML.",
       topMarketTakeaways: "You are a senior J.P. Morgan Private Bank strategist. Write a TMT as a thesis-driven narrative essay — NOT a list. Provocative title, flowing narrative with descriptive headings, 600-900 words, polished op-ed style. Return only XML.",
-      ideasInsights: "You are a senior J.P. Morgan Private Bank GIS strategist. Write an Ideas & Insights deep-dive tailored to the specific topic provided. Structure the piece around the most compelling version of the argument — do not force sections that do not serve the thesis. Include 1-2 data-driven CHART XML tags when charts strengthen the argument. Return only XML.",
+      ideasInsights: "You are a senior J.P. Morgan Private Bank GIS strategist. Write an Ideas & Insights deep-dive. CRITICAL RULES: (1) Every I&I must feel completely different — choose section headings that fit THIS specific thesis, never generic ones. (2) 2 CHART tags with real numerical data are MANDATORY — if you omit them the output is wrong. (3) All values in each chart must use consistent units. (4) Lead every section with the point, then support it. (5) 1,200-2,000 words. Return only XML.",
       eventResponse: "You are a J.P. Morgan Private Bank strategist. Write a live event response feed. Desk commentary style — 40-60 words per update. Reactive, direct. Return only XML.",
     };
     return prompts[templateId] || "You are a senior J.P. Morgan Private Bank strategist. Institutional voice, direct, confident. Lead with conclusion. Return only XML.";
@@ -1536,6 +1536,87 @@ ${getXmlStructure()}`;
 
 
 // ── EMAIL PREVIEW COMPONENT ───────────────────────────────────────────────────
+const SnippetsContent = ({ c_content }) => {
+  const [snippets, setSnippets] = React.useState(null);
+  const [loading, setLoading] = React.useState(false);
+
+  const generate = async () => {
+    const apiKey = localStorage.getItem('_ak');
+    if (!apiKey) { alert('Set your API key first'); return; }
+    const allText = [c_content.title, c_content.tagline, ...(c_content.sections||[]).map(s=>s.content)].filter(Boolean).join(' ');
+    if (!allText.trim()) { alert('Write some content first'); return; }
+    setLoading(true);
+    try {
+      const resp = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+        body: JSON.stringify({
+          model: 'claude-haiku-4-5-20251001', max_tokens: 400,
+          system: 'You are extracting the three most interesting, surprising, or conversation-worthy insights from investment content. Return ONLY a JSON array of 3 strings. Each string: one sentence, max 20 words, opinionated, sounds smart at a dinner party. No jargon. No "JPMorgan says". Write as if you\'re sharing an insight with a smart friend. Example: ["Gold has outperformed every major asset class for three years running — most investors still aren\'t positioned for it.", "The Fed\'s hands are tied in a way they haven\'t been since the 1970s.", "AI infrastructure spending is being revised up every quarter — the market is still pricing it as late-cycle."]',
+          messages: [{ role: 'user', content: 'Extract 3 dinner-party talking points from this:\n\n' + allText.slice(0, 2000) }]
+        })
+      });
+      const data = await resp.json();
+      const text = (data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('');
+      const match = text.match(/\[[\s\S]*\]/);
+      if (match) setSnippets(JSON.parse(match[0]));
+    } catch(e) { console.error(e); }
+    setLoading(false);
+  };
+
+  React.useEffect(() => { setSnippets(null); }, [c_content.title]);
+
+  const hasContent = (c_content.sections||[]).some(s => s.content);
+
+  return (
+    <div style={{ background: '#fff', minHeight: '100%', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif' }}>
+      {/* Header */}
+      <div style={{ padding: '20px 32px 16px', borderBottom: '1px solid #F0EDE8' }}>
+        <div style={{ fontSize: 9, fontWeight: 700, color: '#C1A364', textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: 6 }}>J.P. Morgan Private Bank · Snippets</div>
+        <div style={{ fontSize: 22, fontFamily: 'Georgia, serif', color: '#0A1A2F', fontWeight: 400, lineHeight: 1.3 }}>{c_content.title || 'Untitled'}</div>
+      </div>
+
+      <div style={{ padding: '28px 32px' }}>
+        {/* Generate button or snippets */}
+        {!snippets && (
+          <div style={{ textAlign: 'center', padding: '40px 0' }}>
+            <div style={{ fontSize: 40, marginBottom: 16, opacity: 0.3 }}>✦</div>
+            <div style={{ fontSize: 14, color: '#4A5568', marginBottom: 20, fontFamily: 'Georgia, serif' }}>Three punchy talking points from your piece.</div>
+            <button onClick={generate} disabled={loading || !hasContent}
+              style={{ padding: '10px 24px', borderRadius: 6, border: 'none', background: loading ? '#E5E7EB' : '#0A1A2F', color: loading ? '#9CA3AF' : '#fff', fontSize: 12, fontWeight: 600, cursor: loading || !hasContent ? 'default' : 'pointer', letterSpacing: '0.04em' }}>
+              {loading ? '✦ Generating...' : !hasContent ? 'Write content first' : '✦ Generate Snippets'}
+            </button>
+          </div>
+        )}
+
+        {snippets && (
+          <div>
+            {snippets.map((snippet, i) => (
+              <div key={i} style={{ display: 'flex', gap: 18, marginBottom: 28, alignItems: 'flex-start' }}>
+                <div style={{ flexShrink: 0, width: 28, height: 28, borderRadius: '50%', background: '#0A1A2F', display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: 2 }}>
+                  <span style={{ color: '#C1A364', fontSize: 11, fontWeight: 700 }}>{i + 1}</span>
+                </div>
+                <div style={{ flex: 1 }}>
+                  <p style={{ fontSize: 17, lineHeight: 1.65, color: '#0A1A2F', margin: 0, fontFamily: 'Georgia, serif', fontWeight: 400 }}>{snippet}</p>
+                </div>
+              </div>
+            ))}
+
+            {/* Source label */}
+            <div style={{ marginTop: 32, paddingTop: 20, borderTop: '1px solid #F0EDE8', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ fontSize: 10, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.1em' }}>J.P. Morgan Private Bank · GIS</div>
+              <button onClick={() => setSnippets(null)}
+                style={{ fontSize: 10, color: '#C1A364', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600 }}>
+                ↺ Regenerate
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
 const EmailPreviewContent = ({ c_content, templateName, metadata }) => {
   const title = c_content.title || 'Untitled';
   const sections = (c_content.sections || []).filter(s => s.content);
@@ -1543,265 +1624,104 @@ const EmailPreviewContent = ({ c_content, templateName, metadata }) => {
   const team = metadata?.team || 'GIS';
 
   return (
-    <div style={{ background: '#E8E8E8', minHeight: '100%', padding: '40px 24px', fontFamily: 'Arial, Helvetica, sans-serif', boxSizing: 'border-box' }}>
-      {/* Email client chrome */}
-      <div style={{ maxWidth: 600, margin: '0 auto' }}>
-        {/* Email client header bar */}
-        <div style={{ background: '#fff', borderRadius: 6, padding: '12px 16px', marginBottom: 2, boxShadow: '0 1px 3px rgba(0,0,0,0.08)', fontFamily: 'Arial, sans-serif' }}>
-          <div style={{ display: 'flex', gap: 8, marginBottom: 6 }}>
-            <span style={{ fontSize: 10, color: '#999', width: 50 }}>From:</span>
-            <span style={{ fontSize: 10, color: '#222', fontWeight: 600 }}>JPMorgan Private Bank GIS &lt;gis-content@jpmorgan.com&gt;</span>
-          </div>
-          <div style={{ display: 'flex', gap: 8, marginBottom: 6 }}>
-            <span style={{ fontSize: 10, color: '#999', width: 50 }}>To:</span>
-            <span style={{ fontSize: 10, color: '#555' }}>Your Client Advisory Team</span>
-          </div>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <span style={{ fontSize: 10, color: '#999', width: 50 }}>Subject:</span>
-            <span style={{ fontSize: 10, color: '#222', fontWeight: 600 }}>{title}</span>
-          </div>
+    <div style={{ display: 'flex', height: '100%', fontFamily: 'Segoe UI, Arial, sans-serif', background: '#F3F2F1', minHeight: 600 }}>
+      {/* Outlook-style left sidebar */}
+      <div style={{ width: 260, flexShrink: 0, background: '#fff', borderRight: '1px solid #E1DFDD', display: 'flex', flexDirection: 'column' }}>
+        {/* Inbox header */}
+        <div style={{ padding: '12px 16px', background: '#0078D4', color: '#fff' }}>
+          <div style={{ fontSize: 13, fontWeight: 600 }}>Inbox</div>
+          <div style={{ fontSize: 10, opacity: 0.8, marginTop: 1 }}>gis-content@jpmorgan.com</div>
         </div>
-        <div style={{ background: '#fff', borderRadius: 6, padding: '4px 16px', marginBottom: 8, boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
-          <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
-            <span style={{ fontSize: 9, color: '#999' }}>{date}</span>
-            <span style={{ fontSize: 9, color: '#4A90E2', cursor: 'pointer' }}>Reply</span>
-            <span style={{ fontSize: 9, color: '#4A90E2', cursor: 'pointer' }}>Forward</span>
-            <span style={{ fontSize: 9, color: '#4A90E2', cursor: 'pointer' }}>Archive</span>
+        {/* Folders */}
+        {['Inbox', 'Drafts', 'Sent Items', 'Deleted Items'].map((f, i) => (
+          <div key={f} style={{ padding: '8px 16px', fontSize: 12, color: i === 0 ? '#0078D4' : '#444', background: i === 0 ? '#EFF6FC' : 'transparent', fontWeight: i === 0 ? 600 : 400, borderLeft: i === 0 ? '3px solid #0078D4' : '3px solid transparent', cursor: 'pointer' }}>{f}</div>
+        ))}
+        <div style={{ borderTop: '1px solid #E1DFDD', marginTop: 8 }} />
+        {/* Email list item - current email */}
+        <div style={{ padding: '10px 16px', background: '#DEECF9', borderLeft: '3px solid #0078D4', cursor: 'pointer' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: '#0A1A2F' }}>JPM Private Bank GIS</div>
+            <div style={{ fontSize: 9, color: '#666' }}>{new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}</div>
           </div>
+          <div style={{ fontSize: 11, fontWeight: 600, color: '#0A1A2F', marginBottom: 2, lineHeight: 1.3 }}>{title.slice(0, 45)}{title.length > 45 ? '...' : ''}</div>
+          <div style={{ fontSize: 10, color: '#666', lineHeight: 1.4 }}>{sections[0]?.content?.slice(0, 60)}...</div>
         </div>
-        {/* Email body */}
-        <div style={{ background: '#ffffff', borderRadius: 4, overflow: 'hidden', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
-          {/* Header strip */}
-          <div style={{ background: '#0A1A2F', padding: '18px 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div>
-              <div style={{ fontSize: 10, color: '#C1A364', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: 2 }}>J.P. Morgan Private Bank</div>
-              <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.45)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>{templateName} · {team}</div>
+        {/* Ghost emails below */}
+        {[{ from: 'Markets Research', subj: 'Weekly Macro Digest', time: 'Yesterday' }, { from: 'Investment Solutions', subj: 'Portfolio Review Q2', time: 'Mon' }, { from: 'GIS Team', subj: 'Forward Look — June', time: 'Mon' }].map((e, i) => (
+          <div key={i} style={{ padding: '10px 16px', borderLeft: '3px solid transparent', cursor: 'pointer', borderBottom: '1px solid #F3F2F1' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 2 }}>
+              <div style={{ fontSize: 11, fontWeight: 600, color: '#333' }}>{e.from}</div>
+              <div style={{ fontSize: 9, color: '#999' }}>{e.time}</div>
             </div>
-            <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.4)' }}>{date}</div>
+            <div style={{ fontSize: 10, color: '#555' }}>{e.subj}</div>
           </div>
-          {/* Gold rule */}
-          <div style={{ height: 3, background: 'linear-gradient(90deg, #C1A364, #D4B87A, #C1A364)' }} />
-          {/* Content area */}
-          <div style={{ padding: '28px 32px 24px' }}>
-            {/* Title */}
-            <h1 style={{ fontFamily: 'Georgia, "Times New Roman", serif', fontSize: 24, fontWeight: 400, color: '#0A1A2F', margin: '0 0 8px', lineHeight: 1.3 }}>{title}</h1>
-            {/* Tagline */}
-            {c_content.tagline && (
-              <p style={{ fontSize: 14, color: '#6B7280', fontStyle: 'italic', margin: '0 0 24px', paddingBottom: 20, borderBottom: '1px solid #E5E7EB' }}>{c_content.tagline}</p>
-            )}
-            {!c_content.tagline && <div style={{ borderBottom: '1px solid #E5E7EB', marginBottom: 24 }} />}
-            {/* Sections */}
-            {sections.length === 0 && (
-              <p style={{ color: '#9CA3AF', fontSize: 13, fontStyle: 'italic' }}>No content yet — write your piece in the editor first.</p>
-            )}
-            {sections.map((s, i) => (
-              <div key={i} style={{ marginBottom: 20 }}>
-                {s.title && (
-                  <div style={{ fontSize: 11, fontWeight: 700, color: '#C1A364', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>{s.title}</div>
-                )}
-                <p style={{ fontSize: 14, lineHeight: 1.75, color: '#374151', margin: 0 }}>{s.content}</p>
-                {i < sections.length - 1 && <div style={{ borderBottom: '1px solid #F3F4F6', marginTop: 18 }} />}
-              </div>
-            ))}
-            {/* CTA Button */}
-            <div style={{ textAlign: 'center', marginTop: 28, paddingTop: 20, borderTop: '1px solid #E5E7EB' }}>
-              <div style={{ display: 'inline-block', background: '#0A1A2F', color: '#ffffff', padding: '12px 28px', borderRadius: 3, fontSize: 12, fontWeight: 700, letterSpacing: '0.06em', textDecoration: 'none', textTransform: 'uppercase' }}>
-                Read Full Piece
-              </div>
-            </div>
-          </div>
-          {/* Footer */}
-          <div style={{ background: '#F9FAFB', borderTop: '1px solid #E5E7EB', padding: '16px 32px' }}>
-            <p style={{ fontSize: 10, color: '#9CA3AF', margin: '0 0 4px', lineHeight: 1.6 }}>
-              This communication is for informational purposes only and is not intended as investment advice, an offer or solicitation for the purchase or sale of any financial instrument. J.P. Morgan Private Bank.
-            </p>
-            <p style={{ fontSize: 10, color: '#9CA3AF', margin: 0 }}>
-              © {new Date().getFullYear()} JPMorgan Chase & Co. All rights reserved. &nbsp;|&nbsp; <span style={{ color: '#C1A364' }}>Unsubscribe</span> &nbsp;|&nbsp; <span style={{ color: '#C1A364' }}>Privacy Policy</span>
-            </p>
-          </div>
-        </div>
-        {/* Bottom space */}
-        <div style={{ height: 32 }} />
-      </div>
-    </div>
-  );
-};
-
-// ── VISUAL CHART CONTENT ──────────────────────────────────────────────────────
-const VisualChartContent = ({ c_content, templateName }) => {
-  const [chartData, setChartData] = React.useState(null);
-  const [loading, setLoading] = React.useState(false);
-  const [error, setError] = React.useState('');
-  const [chartType, setChartType] = React.useState('bar');
-
-
-  const generateChart = async () => {
-    const apiKey = localStorage.getItem('_ak');
-    if (!apiKey) { setError('Set your API key first'); return; }
-    setLoading(true); setError('');
-    try {
-      const allText = [c_content.title, c_content.tagline, ...(c_content.sections||[]).map(s=>s.content)].filter(Boolean).join(' ');
-      const resp = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
-        body: JSON.stringify({
-          model: 'claude-haiku-4-5-20251001', max_tokens: 8000,
-          system: 'You are a financial data visualisation expert. Extract the most compelling quantitative story and return ONLY valid JSON. No markdown, no explanation.',
-          messages: [{ role: 'user', content: `Read this investment content and build the best possible chart. CRITICAL RULES: (1) ALL values in the data array MUST use the same unit and scale - never mix percentages with basis points or raw numbers with billions. (2) If you have basis points, convert everything to basis points. If percentages, use percentages throughout. (3) Choose 4-8 data points that tell a clear visual story. (4) Values should span a meaningful range - avoid having one value 10x larger than others unless that IS the story. Return this exact JSON structure:\n{"title":"punchy chart title that states the insight","subtitle":"one sentence explaining what this shows","type":"bar","xKey":"x axis label","yKey":"y axis label with unit","unit":"% or bp or x or $B","data":[{"name":"short label","value":number},{"name":"short label","value":number}],"insight":"the single most important takeaway from this chart","source":"source if mentioned"}\n\nContent:\n${allText.slice(0, 2500)}` }]
-        })
-      });
-      const data = await resp.json();
-      const text = (data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('');
-      const match = text.match(/\{[\s\S]*\}/);
-      if (!match) { setError('Could not parse response'); setLoading(false); return; }
-      const parsed = JSON.parse(match[0]);
-      if (parsed.data && parsed.data.length > 0) {
-        setChartData(parsed);
-        setChartType(parsed.type || 'bar');
-      } else {
-        setError('No data found in content');
-      }
-    } catch(e) { setError('Error: ' + e.message); }
-    setLoading(false);
-  };
-
-  const GOLD = '#C1A364';
-  const NAVY = '#0A1A2F';
-  const TEAL = '#2A7F8F';
-  const COLORS = [GOLD, '#5B8DB8', '#7CB87C', '#C17A6B', '#9B7BC1', '#B8B85B'];
-
-  const CustomTooltip = ({ active, payload, label }) => {
-    if (!active || !payload?.length) return null;
-    return (
-      <div style={{ background: 'rgba(10,26,47,0.95)', border: '1px solid rgba(193,163,100,0.4)', borderRadius: 8, padding: '10px 14px', fontSize: 12 }}>
-        <div style={{ color: GOLD, fontWeight: 700, marginBottom: 4 }}>{label}</div>
-        {payload.map((p, i) => (
-          <div key={i} style={{ color: '#fff' }}>{p.name}: <strong>{p.value}{chartData?.unit || ''}</strong></div>
         ))}
       </div>
-    );
-  };
 
-  const renderChart = () => {
-    if (!chartData || !chartData.data || !ResponsiveContainer) return null;
-    const data = chartData.data;
-    const hasValue2 = data.some(d => d.value2 != null);
-    const commonProps = {
-      data,
-      margin: { top: 20, right: 30, left: 10, bottom: 60 }
-    };
-    const xAxis = <XAxis dataKey="name" tick={{ fill: '#444', fontSize: 11 }} angle={-30} textAnchor="end" height={70} />;
-    const minVal = Math.min(...(chartData?.data || []).map(d => Math.min(d.value || 0, d.value2 || Infinity)));
-    const maxVal2 = Math.max(...(chartData?.data || []).map(d => Math.max(d.value || 0, d.value2 || -Infinity)));
-    const yDomain = [minVal > 0 ? 0 : Math.floor(minVal * 1.1), Math.ceil(maxVal2 * 1.15)];
-    const yAxis = <YAxis tick={{ fill: '#666', fontSize: 10 }} unit={chartData.unit || ''} domain={yDomain} tickCount={6} />;
-    const grid = <CartesianGrid strokeDasharray="3 3" stroke="#E8E8E8" />;
-    const tooltip = <Tooltip content={<CustomTooltip />} />;
-    const legend = hasValue2 ? <Legend wrapperStyle={{ color: '#555', fontSize: 11, paddingTop: 16 }} /> : null;
-
-    if (chartType === 'line') return (
-      <LineChart {...commonProps}>
-        {grid}{xAxis}{yAxis}{tooltip}{legend}
-        <Line type="monotone" dataKey="value" name={chartData.yKey || 'Value'} stroke={GOLD} strokeWidth={3} dot={{ fill: GOLD, r: 5 }} activeDot={{ r: 8 }} />
-        {hasValue2 && <Line type="monotone" dataKey="value2" name="Comparison" stroke={TEAL} strokeWidth={2} strokeDasharray="5 5" dot={{ fill: TEAL, r: 4 }} />}
-      </LineChart>
-    );
-    if (chartType === 'area') return (
-      <AreaChart {...commonProps}>
-        {grid}{xAxis}{yAxis}{tooltip}{legend}
-        <defs>
-          <linearGradient id="goldGrad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="5%" stopColor={GOLD} stopOpacity={0.4}/>
-            <stop offset="95%" stopColor={GOLD} stopOpacity={0.02}/>
-          </linearGradient>
-        </defs>
-        <Area type="monotone" dataKey="value" name={chartData.yKey || 'Value'} stroke={GOLD} strokeWidth={2} fill="url(#goldGrad)" />
-        {hasValue2 && <Area type="monotone" dataKey="value2" name="Comparison" stroke={TEAL} strokeWidth={2} fill="none" strokeDasharray="5 5" />}
-      </AreaChart>
-    );
-    return (
-      <BarChart {...commonProps}>
-        {grid}{xAxis}{yAxis}{tooltip}{legend}
-        <Bar dataKey="value" name={chartData.yKey || 'Value'} radius={[4,4,0,0]}>
-          {data.map((entry, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} fillOpacity={0.9} />)}
-        </Bar>
-        {hasValue2 && <Bar dataKey="value2" name="Comparison" fill={TEAL} radius={[4,4,0,0]} fillOpacity={0.7} />}
-      </BarChart>
-    );
-  };
-
-  return (
-    <div style={{ fontFamily: 'Arial, sans-serif', width: '100%', minHeight: '100%', background: '#fff', color: '#1A1A2F', boxSizing: 'border-box' }}>
-      {/* Header */}
-      <div style={{ padding: '20px 40px', borderBottom: '1px solid #E8E0D0', background: NAVY, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div>
-          <div style={{ fontSize: 9, fontWeight: 700, color: GOLD, textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: 6 }}>J.P. Morgan Private Bank · Visual Story</div>
-          <div style={{ fontSize: 22, fontWeight: 400, color: '#fff', lineHeight: 1.3 }}>{c_content.title || 'Untitled'}</div>
-        </div>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-          {chartData && ['bar','line','area'].map(t => (
-            <button key={t} onClick={() => setChartType(t)}
-              style={{ padding: '5px 10px', borderRadius: 4, border: '1px solid ' + (chartType===t ? GOLD : '#E8E0D0'), background: chartType===t ? GOLD : '#fff', color: chartType===t ? '#fff' : '#555', fontSize: 10, cursor: 'pointer', fontWeight: 600 }}>
-              {t === 'bar' ? '▋ Bar' : t === 'line' ? '╱ Line' : '◱ Area'}
-            </button>
+      {/* Reading pane */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        {/* Reading pane toolbar */}
+        <div style={{ background: '#fff', borderBottom: '1px solid #E1DFDD', padding: '6px 20px', display: 'flex', gap: 16, alignItems: 'center' }}>
+          {['Reply', 'Reply All', 'Forward', 'Archive', 'Delete'].map(a => (
+            <span key={a} style={{ fontSize: 11, color: '#0078D4', cursor: 'pointer', fontWeight: a === 'Reply' ? 600 : 400 }}>{a}</span>
           ))}
-          <button onClick={generateChart} disabled={loading}
-            style={{ padding: '10px 22px', borderRadius: 6, border: '1px solid ' + GOLD, background: loading ? '#fff' : GOLD, color: loading ? GOLD : '#fff', fontSize: 12, cursor: loading ? 'wait' : 'pointer', fontWeight: 700 }}>
-            {loading ? '⏳' : chartData ? '↻ Regenerate' : '✨ Generate Visual Story'}
-          </button>
+          <div style={{ flex: 1 }} />
+          <span style={{ fontSize: 10, color: '#999' }}>{date}</span>
+        </div>
+
+        {/* Email content */}
+        <div style={{ flex: 1, overflowY: 'auto', background: '#F3F2F1', padding: '20px 24px' }}>
+          {/* Email card */}
+          <div style={{ background: '#fff', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', maxWidth: 680 }}>
+            {/* Email header in reading pane */}
+            <div style={{ padding: '16px 24px', borderBottom: '1px solid #E1DFDD' }}>
+              <div style={{ fontSize: 18, fontWeight: 400, color: '#0A1A2F', fontFamily: 'Georgia, serif', marginBottom: 10, lineHeight: 1.35 }}>{title}</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div style={{ width: 36, height: 36, borderRadius: '50%', background: '#0A1A2F', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <span style={{ color: '#C1A364', fontSize: 12, fontWeight: 700 }}>JP</span>
+                </div>
+                <div>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: '#0A1A2F' }}>JPMorgan Private Bank GIS <span style={{ fontWeight: 400, color: '#666' }}>&lt;gis-content@jpmorgan.com&gt;</span></div>
+                  <div style={{ fontSize: 11, color: '#666' }}>To: Your Client Advisory Team &nbsp;·&nbsp; {date}</div>
+                </div>
+              </div>
+            </div>
+
+            {/* JPM branded email body */}
+            <div style={{ background: '#0A1A2F', padding: '14px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ fontSize: 11, color: '#C1A364', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em' }}>J.P. Morgan Private Bank</div>
+              <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{templateName} · {team}</div>
+            </div>
+            <div style={{ height: 3, background: 'linear-gradient(90deg, #C1A364, #D4B87A, #C1A364)' }} />
+
+            <div style={{ padding: '24px 28px' }}>
+              {c_content.tagline && (
+                <p style={{ fontSize: 15, color: '#4A5568', fontStyle: 'italic', margin: '0 0 20px', paddingBottom: 18, borderBottom: '1px solid #E5E7EB', lineHeight: 1.6, fontFamily: 'Georgia, serif' }}>{c_content.tagline}</p>
+              )}
+              {sections.length === 0 && (
+                <p style={{ color: '#9CA3AF', fontSize: 13, fontStyle: 'italic' }}>No content yet — write your piece in the editor first.</p>
+              )}
+              {sections.map((s, i) => (
+                <div key={i} style={{ marginBottom: 18 }}>
+                  {s.title && <div style={{ fontSize: 10, fontWeight: 700, color: '#C1A364', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 5 }}>{s.title}</div>}
+                  <p style={{ fontSize: 14, lineHeight: 1.8, color: '#374151', margin: 0, fontFamily: 'Georgia, serif' }}>{s.content}</p>
+                  {i < sections.length - 1 && <div style={{ borderBottom: '1px solid #F3F4F6', marginTop: 16 }} />}
+                </div>
+              ))}
+              <div style={{ textAlign: 'center', marginTop: 24, paddingTop: 18, borderTop: '1px solid #E5E7EB' }}>
+                <div style={{ display: 'inline-block', background: '#0A1A2F', color: '#fff', padding: '10px 24px', fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', cursor: 'pointer' }}>Read Full Piece →</div>
+              </div>
+            </div>
+
+            <div style={{ background: '#F9FAFB', borderTop: '1px solid #E5E7EB', padding: '14px 28px' }}>
+              <p style={{ fontSize: 10, color: '#9CA3AF', margin: 0, lineHeight: 1.6 }}>
+                This communication is for informational purposes only. J.P. Morgan Private Bank &nbsp;·&nbsp; © {new Date().getFullYear()} JPMorgan Chase & Co. &nbsp;
+                <span style={{ color: '#C1A364' }}>Unsubscribe</span> &nbsp;|&nbsp; <span style={{ color: '#C1A364' }}>Privacy Policy</span>
+              </p>
+            </div>
+          </div>
         </div>
       </div>
-
-      {error && <div style={{ margin: '16px 40px', padding: '10px 14px', background: '#FFF1F1', border: '1px solid #FECACA', borderRadius: 6, color: '#DC2626', fontSize: 12 }}>{error}</div>}
-
-      {!chartData && !loading && (
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '80px 40px', textAlign: 'center' }}>
-          <div style={{ fontSize: 48, marginBottom: 20, opacity: 0.4 }}>📊</div>
-          <div style={{ fontSize: 18, color: '#555', marginBottom: 8 }}>Generate a visual story from your content</div>
-          <div style={{ fontSize: 13, color: '#aaa', maxWidth: 360 }}>The AI reads your written piece and extracts the key quantitative story, then renders it as an interactive chart</div>
-        </div>
-      )}
-
-      {loading && (
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '80px 40px', textAlign: 'center' }}>
-          <div style={{ fontSize: 36, marginBottom: 16, animation: 'spin 1s linear infinite' }}>⏳</div>
-          <div style={{ fontSize: 16, color: '#555' }}>Reading your content and building the visual...</div>
-        </div>
-      )}
-
-      {chartData && !loading && (
-        <div style={{ padding: '32px 40px' }}>
-          {/* Chart title and subtitle */}
-          <div style={{ marginBottom: 24 }}>
-            <div style={{ fontSize: 18, fontWeight: 400, color: NAVY, marginBottom: 6 }}>{chartData.title}</div>
-            <div style={{ fontSize: 13, color: '#888', letterSpacing: '0.04em' }}>{chartData.subtitle}</div>
-          </div>
-          {/* Chart */}
-          <div style={{ background: '#FAFAFA', border: '1px solid #E8E0D0', borderRadius: 12, padding: '24px 8px 8px', marginBottom: 20 }}>
-            <ResponsiveContainer width="100%" height={360}>
-              {renderChart()}
-            </ResponsiveContainer>
-          </div>
-          {/* Source + insight */}
-          {chartData.source && <div style={{ fontSize: 10, color: '#aaa', marginBottom: 12 }}>Source: {chartData.source}</div>}
-          {chartData.insight && (
-            <div style={{ background: '#FFF9EE', borderLeft: '3px solid ' + GOLD, borderRadius: '0 8px 8px 0', padding: '12px 16px', fontSize: 14, color: NAVY, fontStyle: 'italic', lineHeight: 1.6 }}>
-              💡 {chartData.insight}
-            </div>
-          )}
-          {/* Actions */}
-          <div style={{ display: 'flex', gap: 10, marginTop: 20 }}>
-            <button onClick={() => { navigator.clipboard?.writeText(JSON.stringify(chartData, null, 2)); }}
-              style={{ padding: '8px 16px', borderRadius: 6, border: '1px solid ' + GOLD, background: '#fff', color: GOLD, fontSize: 11, cursor: 'pointer', fontWeight: 600 }}>
-              📋 Copy Data
-            </button>
-            <button onClick={() => { const el = document.querySelector('[data-chart-export]'); alert('Export: connect to html2canvas or svg export library'); }}
-              style={{ padding: '8px 16px', borderRadius: 6, border: '1px solid #E8E0D0', background: '#fff', color: '#555', fontSize: 11, cursor: 'pointer', fontWeight: 600 }}>
-              ⬇ Export PNG
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
@@ -1949,6 +1869,7 @@ const OutputPreviewPanel = ({ isOpen, onClose, templateName, templateId, content
     { id: 'pdf', label: 'PDF', icon: '📄' },
     { id: 'chart', label: '📊 Visual Story', icon: '📊' },
     { id: 'whatsapp', label: 'WhatsApp / WeCom', icon: '💬' },
+    { id: 'snippets', label: 'Snippets', icon: '✦' },
   ];
 
   const formats = [{ id: 'web', label: 'Web View' }]; // legacy - now merged into devices
@@ -3238,12 +3159,13 @@ const IdeasInsightsTemplate = ({ content, onContentChange }) => {
     <div style={{ background: '#fff', borderRadius: 10, overflow: 'hidden', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
       <div style={{ padding: 16 }}>
         {/* Guidance */}
-        <div style={{ marginBottom: 14, padding: '8px 12px', background: '#FFF9ED', borderLeft: '3px solid ' + c.gold, borderRadius: '0 6px 6px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div style={{ fontSize: 10, color: c.slate }}>
-            <strong style={{ color: c.gold }}>Ideas & Insights</strong> — 1–2 pages. Planning considerations and investment trends. Hard cap <strong>2,000 words</strong>. Include charts to support the story.
+        <div style={{ marginBottom: 14, padding: '10px 14px', background: '#FFF9ED', borderLeft: '3px solid ' + c.gold, borderRadius: '0 6px 6px 0' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: c.gold }}>Ideas & Insights — Writing Guidance</div>
+            <div style={{ fontSize: 11, fontWeight: 700, color: warnOver ? c.neg : wordCount > 1600 ? '#E08A00' : wordCount > 0 ? c.pos : c.slate, marginLeft: 12, flexShrink: 0 }}>{wordCount}w{warnOver ? ' ⚠ Over 2,000w' : ''}</div>
           </div>
-          <div style={{ fontSize: 11, fontWeight: 700, color: warnOver ? c.neg : wordCount > 1600 ? '#E08A00' : wordCount > 0 ? c.pos : c.slate, marginLeft: 12, flexShrink: 0 }}>
-            {wordCount}w {warnOver ? '⚠ Over 2,000w' : ''}
+          <div style={{ fontSize: 11, color: c.slate, lineHeight: 1.7 }}>
+            <strong style={{ color: c.navy }}>Each I&I should feel completely different.</strong> The thesis determines the structure — not the other way around. Choose your own section headings to fit the specific argument. Start with the investment insight stated plainly, then build the case with data. Every piece must include charts — the data tells the story the words cannot. Aim for 1,200–2,000 words across 4–6 sections. Hard cap: 2,000 words. Lead every section with the point, then support it. The "what to do" must be specific — not "consider exposure" but "add X% of Y at these levels".
           </div>
         </div>
 
@@ -7632,56 +7554,70 @@ const StyleSection = ({ title, children, last }) => (
   </div>
 );
 
+const DevRef = ({ model, tokens, search, system, userPrompt, xml }) => (
+  <div style={{ padding: '16px 20px', background: '#0F172A' }}>
+    <div style={{ fontSize: 10, fontWeight: 700, color: '#C1A364', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 12 }}>⚙️ Developer Reference</div>
+    <div style={{ fontFamily: 'monospace', fontSize: 11, lineHeight: 2, color: '#94A3B8' }}>
+      <div><span style={{ color: '#60A5FA' }}>model:</span> <span style={{ color: '#86EFAC' }}>{model}</span></div>
+      <div><span style={{ color: '#60A5FA' }}>max_tokens:</span> <span style={{ color: '#FCD34D' }}>{tokens}</span></div>
+      <div><span style={{ color: '#60A5FA' }}>web_search:</span> <span style={{ color: search ? '#86EFAC' : '#F87171' }}>{search ? 'enabled' : 'disabled'}</span></div>
+    </div>
+    {system && <>
+      <div style={{ fontSize: 10, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.06em', marginTop: 12, marginBottom: 4 }}>System Prompt</div>
+      <div style={{ padding: '10px 12px', background: '#1E293B', borderRadius: 6, color: '#CBD5E1', fontSize: 11, lineHeight: 1.7, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{system}</div>
+    </>}
+    {userPrompt && <>
+      <div style={{ fontSize: 10, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.06em', marginTop: 10, marginBottom: 4 }}>User Prompt Shape</div>
+      <div style={{ padding: '10px 12px', background: '#1E293B', borderRadius: 6, color: '#CBD5E1', fontSize: 11, lineHeight: 1.7, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{userPrompt}</div>
+    </>}
+    {xml && <>
+      <div style={{ fontSize: 10, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.06em', marginTop: 10, marginBottom: 4 }}>XML Output Structure</div>
+      <div style={{ padding: '10px 12px', background: '#1E293B', borderRadius: 6, color: '#86EFAC', fontSize: 10, lineHeight: 1.7, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{xml}</div>
+    </>}
+  </div>
+);
+
 const PubCard = ({ pub, isExpanded, onToggle }) => {
-  const tagColors = { model: '#0A1A2F', tokens: '#C1A364', web: '#2A7F8F', internal: '#4A5568', external: '#059669' };
+  const tagColors = { model: '#0A1A2F', tokens: '#C1A364', web: '#2A7F8F', internal: '#4A5568', external: '#059669', gisonly: '#6B5B95' };
   return (
-    <div style={{ border: '1px solid #E8E0D0', borderRadius: 10, overflow: 'hidden', marginBottom: 12 }}>
-      <div onClick={onToggle} style={{ padding: '14px 18px', cursor: 'pointer', background: isExpanded ? '#F7F4EF' : '#fff', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <span style={{ fontSize: 20 }}>{pub.icon}</span>
+    <div style={{ border: '1px solid #E8E0D0', borderRadius: 10, overflow: 'hidden', marginBottom: 14 }}>
+      <div onClick={onToggle} style={{ padding: '16px 20px', cursor: 'pointer', background: isExpanded ? '#F7F4EF' : '#fff', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+          <span style={{ fontSize: 22, flexShrink: 0 }}>{pub.icon}</span>
           <div>
-            <div style={{ fontSize: 14, fontWeight: 700, color: '#0A1A2F' }}>{pub.name}</div>
-            <div style={{ fontSize: 11, color: '#4A5568', marginTop: 2 }}>{pub.tagline}</div>
+            <div style={{ fontSize: 15, fontWeight: 700, color: '#0A1A2F' }}>{pub.name}</div>
+            <div style={{ fontSize: 11, color: '#4A5568', marginTop: 3, lineHeight: 1.4 }}>{pub.tagline}</div>
           </div>
         </div>
-        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: 5, alignItems: 'center', flexWrap: 'wrap', maxWidth: 320, justifyContent: 'flex-end' }}>
           {pub.badges && pub.badges.map(b => (
-            <span key={b.label} style={{ fontSize: 9, fontWeight: 700, padding: '2px 7px', borderRadius: 8, background: (tagColors[b.type]||'#888') + '18', color: tagColors[b.type]||'#888', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{b.label}</span>
+            <span key={b.label} style={{ fontSize: 9, fontWeight: 700, padding: '2px 8px', borderRadius: 10, background: (tagColors[b.type]||'#888') + '18', color: tagColors[b.type]||'#888', textTransform: 'uppercase', letterSpacing: '0.06em', whiteSpace: 'nowrap' }}>{b.label}</span>
           ))}
-          <span style={{ color: '#4A5568', fontSize: 18, marginLeft: 4 }}>{isExpanded ? '▲' : '▼'}</span>
+          <span style={{ color: '#4A5568', fontSize: 16, marginLeft: 6 }}>{isExpanded ? '▲' : '▼'}</span>
         </div>
       </div>
       {isExpanded && (
         <div style={{ borderTop: '1px solid #E8E0D0' }}>
-          <div style={{ padding: '16px 20px', background: '#F0F7FF' }}>
-            <div style={{ fontSize: 10, fontWeight: 700, color: '#2563EB', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 10 }}>📘 Plain English Guide</div>
-            <div style={{ fontSize: 13, lineHeight: 1.8, color: '#1E3A5F', fontFamily: 'Georgia, serif' }}>
-              <div style={{ marginBottom: 8 }}><strong>What it is:</strong> {pub.what}</div>
-              <div style={{ marginBottom: 8 }}><strong>When to use it:</strong> {pub.when}</div>
-              <div style={{ marginBottom: 8 }}><strong>When NOT to use it:</strong> {pub.whenNot}</div>
-              <div style={{ marginBottom: 8 }}><strong>Voice & Tone:</strong> {pub.voice}</div>
-              <div style={{ marginBottom: 8 }}><strong>Structure:</strong> {pub.structure}</div>
-              {pub.aiRole && <div><strong>AI Role:</strong> {pub.aiRole}</div>}
-            </div>
+          <div style={{ padding: '20px 24px', background: '#F0F7FF' }}>
+            <div style={{ fontSize: 10, fontWeight: 700, color: '#2563EB', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 14 }}>📘 Plain English Guide</div>
+            {[
+              ['What it is', pub.what],
+              ['Audience', pub.audience],
+              ['When to use it', pub.when],
+              ['When NOT to use it', pub.whenNot],
+              ['Voice & Tone', pub.voice],
+              ['Structure', pub.structure],
+              ['Word count', pub.wordCount],
+              ['AI Role', pub.aiRole],
+              ['Editorial standard', pub.standard],
+            ].filter(([,v]) => v).map(([label, val]) => (
+              <div key={label} style={{ marginBottom: 10, display: 'flex', gap: 12 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#2563EB', flexShrink: 0, width: 130, paddingTop: 1 }}>{label}</div>
+                <div style={{ fontSize: 13, lineHeight: 1.75, color: '#1E3A5F', fontFamily: 'Georgia, serif', flex: 1 }}>{val}</div>
+              </div>
+            ))}
           </div>
-          <div style={{ padding: '16px 20px', background: '#0F172A' }}>
-            <div style={{ fontSize: 10, fontWeight: 700, color: '#C1A364', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 10 }}>⚙️ Developer Reference</div>
-            <div style={{ fontFamily: 'monospace', fontSize: 11, lineHeight: 1.9, color: '#94A3B8' }}>
-              <div><span style={{ color: '#60A5FA' }}>model:</span> <span style={{ color: '#86EFAC' }}>{pub.devModel}</span></div>
-              <div><span style={{ color: '#60A5FA' }}>max_tokens:</span> <span style={{ color: '#FCD34D' }}>{pub.devTokens}</span></div>
-              <div><span style={{ color: '#60A5FA' }}>web_search:</span> <span style={{ color: pub.devSearch ? '#86EFAC' : '#F87171' }}>{pub.devSearch ? 'enabled' : 'disabled'}</span></div>
-              <div style={{ marginTop: 8, color: '#64748B', fontSize: 10 }}>SYSTEM PROMPT:</div>
-              <div style={{ marginTop: 4, padding: '10px 12px', background: '#1E293B', borderRadius: 6, color: '#CBD5E1', whiteSpace: 'pre-wrap', wordBreak: 'break-word', lineHeight: 1.7 }}>{pub.devSystem}</div>
-              {pub.devPrompt && <>
-                <div style={{ marginTop: 10, color: '#64748B', fontSize: 10 }}>USER PROMPT SHAPE:</div>
-                <div style={{ marginTop: 4, padding: '10px 12px', background: '#1E293B', borderRadius: 6, color: '#CBD5E1', whiteSpace: 'pre-wrap', wordBreak: 'break-word', lineHeight: 1.7 }}>{pub.devPrompt}</div>
-              </>}
-              {pub.devXml && <>
-                <div style={{ marginTop: 10, color: '#64748B', fontSize: 10 }}>XML OUTPUT STRUCTURE:</div>
-                <div style={{ marginTop: 4, padding: '10px 12px', background: '#1E293B', borderRadius: 6, color: '#86EFAC', whiteSpace: 'pre-wrap', wordBreak: 'break-word', lineHeight: 1.7, fontSize: 10 }}>{pub.devXml}</div>
-              </>}
-            </div>
-          </div>
+          <DevRef model={pub.devModel} tokens={pub.devTokens} search={pub.devSearch} system={pub.devSystem} userPrompt={pub.devPrompt} xml={pub.devXml} />
         </div>
       )}
     </div>
@@ -7692,160 +7628,275 @@ const AboutTab = () => {
   const [section, setSection] = React.useState('publications');
   const [expandedPub, setExpandedPub] = React.useState(null);
 
-  const MACRO_SYSTEM = `You are a senior J.P. Morgan Private Bank Economy & Markets writer. Calm, measured, intellectually confident. Polished essay. Return only XML.`;
-  const MACRO_USER = `ROLE: You are writing a client-facing investment insight in the style of J.P. Morgan Private Bank Economy & Markets. Not sell-side research. A sophisticated, explanatory narrative for UHNW clients and their advisors.\n\nTONE: Calm, measured, intellectually confident. Analytical but accessible. Forward-looking without being sensational. Help the reader think better. Polished essay, not bullet points.\n\nSTRUCTURE:\n1. HEADLINE: Slightly contrarian, framed as a question or reframing statement\n2. OPENING CONTEXT: 2-3 paragraphs. Why topical. Prevailing misconception. Signal it is more nuanced.\n3. CORE ANALYSIS: 2-4 sections with descriptive headings. Mechanisms, trade-offs, second-order effects.\n4. KEY RISKS: 200 words. What could change the outlook.\n5. IMPLICATIONS AND WHAT TO WATCH: 200 words. What to monitor.\n6. CONCLUSION: 150 words. Calm restatement. Perspective and patience.\n\nGUARDRAILS: No marketing language. No bullet points. No exaggerated certainty. Intelligent time-constrained reader. Target 3,000 words.\n\nRESEARCH BRIEF:\nThesis: [user thesis]\nMarkets/regions: [user markets]\nKey data: [user data]\nJPM view: [user jpm view]\nCharts: [user chart narratives]\nConsensus to challenge: [user consensus]`;
-  const MACRO_XML = `<TITLE>headline</TITLE>\n<SECTION id="opening" title="Opening Context">2-3 para intro</SECTION>\n<SECTION id="analysis1" title="[descriptive heading]">~400 words</SECTION>\n<SECTION id="analysis2" title="[descriptive heading]">~400 words</SECTION>\n<SECTION id="analysis3" title="[descriptive heading]">~400 words</SECTION>\n<SECTION id="risks" title="Key Risks">~200 words</SECTION>\n<SECTION id="implications" title="Implications and What to Watch">~200 words</SECTION>\n<SECTION id="conclusion" title="Conclusion">~150 words</SECTION>`;
-
-  const II_SYSTEM = `You are a senior J.P. Morgan Private Bank GIS strategist. Write an Ideas & Insights deep-dive. You MUST generate 2 charts with realistic data in CHART XML tags. Structure: The Opportunity, What the Data Shows (Chart 1), What the Market Is Missing (Chart 2), The JPM View, What To Do. Return only XML including CHART tags.`;
-  const II_XML = `<TITLE>title</TITLE>\n<SUBTITLE>one compelling standfirst sentence</SUBTITLE>\n<SECTION id="opportunity" title="The Opportunity">~150 words</SECTION>\n<SECTION id="data" title="What the Data Shows">~300 words — reference Chart 1</SECTION>\n<SECTION id="missing" title="What the Market Is Missing">~300 words — reference Chart 2</SECTION>\n<SECTION id="jpmview" title="The JPM View">~150 words</SECTION>\n<SECTION id="action" title="What To Do">~150 words</SECTION>\n<CHART id="chart1" title="title" type="Line" yLabel="axis" source="source, year" caption="what this shows">\n  <DATAPOINTS>Year1:val,Year2:val,Year3:val,Year4:val</DATAPOINTS>\n</CHART>\n<CHART id="chart2" title="title" type="Bar" yLabel="axis" source="source, year" caption="what this shows">\n  <DATAPOINTS>Cat1:val,Cat2:val,Cat3:val,Cat4:val</DATAPOINTS>\n</CHART>`;
-
   const publications = [
     {
       id: 'macroMarkets', icon: '🌍', name: 'Macro & Markets',
-      tagline: 'Long-form 3,000-word economy & markets essay — the flagship GIS research format',
-      badges: [{ label: 'Sonnet 4', type: 'model' }, { label: '16,000 tokens', type: 'tokens' }, { label: 'External', type: 'external' }],
-      what: 'The long-form economy and markets essay — 3,000 words, polished institutional prose. Equivalent to the monthly GIS View publication. Covers macro thesis, market dynamics, regional divergence, risks, and portfolio implications in depth. Always published externally to clients via Nexus. The most prestigious and intellectually demanding format in the GIS suite.',
-      when: 'Major macro inflection points. Monthly market outlook updates. When there is a structural investment thesis that requires a full essay to develop properly — not a reactive event, but a considered forward-looking view with data, analysis, and investment implications.',
-      whenNot: 'Do not use for reactive commentary on events (use Desk Commentary or Event Response), short-form views (use Specialist Spotlight), or anything that should be under 500 words.',
-      voice: 'Calm, measured, intellectually confident. Analytical but accessible. Not sell-side research — a sophisticated explanatory narrative for UHNW clients and their advisors. Polished essay prose, never bullet points. Slightly contrarian headline framing. Forward-looking without being sensational. Bridgewater-adjacent in conviction, JPM in tone.',
-      structure: '1. Headline (slightly contrarian, reframing statement or question) 2. Opening Context (2-3 paragraphs: why topical, prevailing misconception, signal it is more nuanced) 3. Core Analysis sections with descriptive headings (mechanisms, trade-offs, second-order effects) 4. Key Risks (200 words: what could change the outlook) 5. Implications & What to Watch (200 words: what to monitor) 6. Conclusion (150 words: calm restatement, perspective and patience). Total: ~3,000 words across 7-8 XML sections.',
-      aiRole: 'Full AI Research Assistant panel (separate from standard AI Assist). User provides a structured brief across 6 fields: Core Thesis, Markets/Regions/Assets, Key Data Points, JPM House View, Chart Narratives, and Consensus to Challenge. The AI writes the entire 3,000-word piece from this brief. The more detail in the brief, the more accurate and differentiated the output. Generates in ~60-90 seconds.',
-      devModel: 'claude-sonnet-4-20250514', devTokens: '16,000', devSearch: false,
-      devSystem: MACRO_SYSTEM, devPrompt: MACRO_USER, devXml: MACRO_XML,
+      tagline: 'The flagship 3,000-word economy & markets essay — monthly GIS View equivalent, always published externally',
+      badges: [{ label: 'claude-sonnet-4', type: 'model' }, { label: '16,000 tokens', type: 'tokens' }, { label: 'External', type: 'external' }, { label: 'Source selector', type: 'web' }],
+      what: 'The long-form economy and markets essay. Equivalent in depth and standing to the monthly GIS View publication. Covers macro thesis, market dynamics, regional divergence, risks, and portfolio implications across 3,000 words of polished institutional prose. This is the most prestigious format in the GIS content suite — it takes a position and defends it across a full essay, not a note.',
+      audience: 'UHNW clients via Nexus, and the advisor teams who brief them. Assumes a sophisticated reader who is time-constrained but wants depth when they engage.',
+      when: "Major macro inflection points. Monthly market outlook cycles. When the GIS team has a structural thesis that requires a full essay to develop properly — not a reactive piece, but a considered, forward-looking view with original analysis. Examples: \"The AI Revolution Is Mid-Cycle\", \"Gold's 130% Rally Has Further to Run\", \"Why the Fed Cannot Save You This Time\".",
+      whenNot: 'Do not use for reactive event commentary (Desk Commentary or Event Response), for short-form conviction expression (Specialist Spotlight), or for anything that can be said in under 500 words. Do not use when the thesis is thin — if you cannot fill 2,500 words with original thinking, the thesis is not ready.',
+      voice: 'Calm, measured, intellectually confident. The voice of a senior economist explaining something important to a very smart friend. Not sell-side research — no bullet points, no hedging language, no "we believe" or "we remain cautious". Write as if you have a considered view and are sharing it directly. Slightly contrarian framing. Forward-looking without being sensational. Bridgewater in rigour, JPM in tone.',
+      structure: 'The argument determines the structure — not a template. Write 4-8 sections with descriptive headings that fit the specific thesis. Every section leads with the point. The essay typically moves from: (1) why this is worth writing now, the prevailing misconception; (2-5) core analytical sections, each a developed argument with data; (6) key risks — what could change the outlook; (7) implications and what to monitor; (8) conclusion — perspective and patience, not a summary.',
+      wordCount: '2,500–3,500 words. Sections vary: opening context 250-400w, core analysis sections 300-600w each, risks/implications 200-250w each, conclusion 150-200w.',
+      aiRole: 'Full AI Research Assistant panel (not the standard AI Assist). User fills in 6 brief fields: Core Thesis, Markets/Regions/Assets covered, Key Data Points, JPM House View, Chart Narratives, and Consensus to Challenge. The AI writes the full 3,000-word piece from this brief. Source selector allows toggling Full Web, Trusted Web (FT, Bloomberg, Reuters, WSJ, Economist), JPM IB Research, JPM Private Bank, or Street Views (Goldman, MS, UBS, Citi, Deutsche Bank, BofA, Barclays). Optional CHART tags generated when brief contains data. Generates in ~60-90 seconds at 16,000 tokens.',
+      standard: 'The differentiation test: what does this piece say that the reader could not have found in Bloomberg this morning? If the answer is "nothing", it needs more work. The thesis must be slightly contrarian, defensible, and grounded in specific data.',
+      devModel: 'claude-sonnet-4-20250514',
+      devTokens: '16,000',
+      devSearch: false,
+      devSystem: `You are a senior J.P. Morgan Private Bank Economy & Markets writer. Calm, measured, intellectually confident. Polished essay — no bullet points, no hedging language. The argument determines the structure. Lead every section with the point. Return only XML.`,
+      devPrompt: `ROLE: Writing a client-facing investment insight in the style of J.P. Morgan Private Bank Economy & Markets. Sophisticated explanatory narrative for UHNW clients. Not sell-side research.
+
+TONE: Calm, measured, intellectually confident. Forward-looking without being sensational. Polished essay prose.
+
+STRUCTURE: Let the thesis determine the structure. Write as many sections as the argument needs (4-8). Do not force sections that do not serve the thesis. Each section heading should be descriptive — written for this specific piece.
+
+GUARDRAILS:
+- No marketing language, no bullet points, no exaggerated certainty
+- Every section leads with the point, then supports it
+- Specific data over vague assertions: "up 12%" not "significantly higher"
+- Target 3,000 words
+
+RESEARCH BRIEF:
+Core thesis: [user input]
+Markets/regions/assets: [user input]  
+Key data points: [user input]
+JPM house view: [user input]
+Chart narratives: [user input]
+Consensus to challenge: [user input]
+
+[Source context injected if sources selected]`,
+      devXml: `<TITLE>slightly contrarian, thesis-driven headline</TITLE>
+<SECTION id="s1" title="[heading written for this specific thesis]">content</SECTION>
+<SECTION id="s2" title="[heading written for this specific thesis]">content</SECTION>
+<SECTION id="s3" title="[heading written for this specific thesis]">content</SECTION>
+... (4-8 sections total, headings chosen by the model for this piece)
+[Optional if data provided:]
+<CHART id="chart1" title="title" type="Bar|Line|Area" yLabel="axis with unit" source="source, year" caption="what this shows">
+  <DATAPOINTS>Label:value,Label:value,Label:value</DATAPOINTS>
+</CHART>`
     },
     {
       id: 'ideasInsights', icon: '💡', name: 'Ideas & Insights',
-      tagline: 'Deep-dive investment analysis, 1,200–2,000 words, always includes two data-driven charts',
-      badges: [{ label: 'Sonnet 4', type: 'model' }, { label: '16,000 tokens', type: 'tokens' }, { label: 'Web Search', type: 'web' }, { label: 'External', type: 'external' }],
-      what: 'Deep-dive investment analysis. 1,200–2,000 words. Always includes exactly two data-driven charts. Structured around a specific investment opportunity: the setup, the data evidence, what the market is missing, the JPM view, and what to do. Comparable in depth to a sell-side research note but written for a UHNW client audience.',
-      when: 'A single compelling investment thesis that deserves rigorous data-backed treatment. When there are two distinct chart angles (one data, one comparative). When the GIS team has a differentiated view versus market consensus. Quarterly thematic pieces. Asset class deep-dives.',
-      whenNot: 'Not for reactive commentary. Not when you do not have two distinct chart ideas. Not for pieces under 1,000 words — use Specialist Spotlight instead.',
-      voice: 'JPM GIS voice. Thesis-driven. Opens with the investment insight stated clearly. Evidence-based with real data. "What the Market Is Missing" section is the intellectual core — the differentiated JPM view that makes the piece worth reading.',
-      structure: 'Title + standfirst subtitle → The Opportunity (~150 words, thesis and JPM view) → What the Data Shows (~300 words, evidence base, Chart 1 reference) → What the Market Is Missing (~300 words, differentiated view, Chart 2 reference) → The JPM View (~150 words, unambiguous position) → What To Do (~150 words, specific allocation guidance) → Chart 1 (data-driven, Line chart) → Chart 2 (comparative/market-missing, Bar chart). Both charts are REQUIRED.',
-      aiRole: 'Generate Idea uses web_search to find the most relevant current data and story, then writes the full piece including both chart data structures. The AI must always include both CHART tags in the XML output. Each chart includes title, type, y-axis label, source, caption, and data points.',
-      devModel: 'claude-sonnet-4-20250514', devTokens: '16,000', devSearch: true,
-      devSystem: II_SYSTEM, devXml: II_XML,
+      tagline: '1,200–2,000 word deep-dive — every I&I unique, thesis determines structure, 2 charts mandatory',
+      badges: [{ label: 'claude-sonnet-4', type: 'model' }, { label: '16,000 tokens', type: 'tokens' }, { label: 'Web search', type: 'web' }, { label: 'External', type: 'external' }],
+      what: 'Deep-dive investment analysis. 1,200–2,000 words. Every piece must include exactly two data-driven charts — the charts are not decoration, they carry part of the argument. Comparable in depth to a quality sell-side research note but written in JPM Private Bank voice for a UHNW client. The format covers a specific investment opportunity or risk with rigour: the setup, the data, the differentiated JPM view, and what to do.',
+      audience: 'UHNW clients and their advisors via Nexus. Assumes engagement with investment ideas but not necessarily technical fluency. The advisor should be able to brief a client on this piece in 5 minutes.',
+      when: 'A single compelling investment thesis that deserves rigorous data-backed treatment. When there are two distinct chart angles that strengthen the argument. When GIS has a differentiated view versus consensus. Quarterly thematic pieces. Asset class deep-dives. Individual security or fund spotlights.',
+      whenNot: 'Not for reactive event commentary. Not when you cannot produce two meaningful charts with real data. Not for pieces under 1,000 words — use Specialist Spotlight. Not for multi-topic pieces — each I&I covers exactly one thesis.',
+      voice: "JPM GIS institutional voice. Thesis-driven — the investment insight is stated plainly in the first paragraph, not buried. Evidence-based: real data, specific levels, named sources. The piece should answer \"what is JPM's differentiated view here?\" — if it cannot, it is not ready.",
+      structure: 'Every I&I should feel different because every thesis is different. Do NOT use generic headings like "The Opportunity" or "What the Data Shows". Write headings specific to this piece — headings that could only exist in this piece. Typical shape: thesis stated plainly → data that builds the case (Chart 1) → the differentiated angle, what consensus misses (Chart 2) → JPM conviction stated unambiguously → specific actionable guidance. But let the argument shape the actual sections.',
+      wordCount: '1,200–2,000 words. Hard cap at 2,000. Two CHART tags required — each chart needs a title that states the finding, an axis label with unit, a real source, and a caption.',
+      aiRole: 'Generate Idea (Sonnet 4, 16k tokens, web_search enabled) finds current data for the topic then writes the full piece including both charts. AI Assist (same model, same tokens) writes from user brief. Both enforce the two-chart requirement at the prompt level. Source selector available in AI Assist (Full Web, Trusted Web, JPM IB, JPM PB, Street Views).',
+      standard: 'Both charts must use consistent units within each chart. Values must be real — not illustrative. The "what to do" section must give specific guidance: instrument, sizing range, entry levels if relevant. Not "consider adding exposure" — that is not advice.',
+      devModel: 'claude-sonnet-4-20250514',
+      devTokens: '16,000',
+      devSearch: true,
+      devSystem: `You are a senior J.P. Morgan Private Bank GIS strategist writing an Ideas & Insights piece. CRITICAL RULES: (1) Every I&I must feel completely different — choose section headings that fit THIS specific thesis, never generic ones like "The Opportunity". (2) Exactly 2 CHART tags with real numerical data are MANDATORY. (3) All values in each chart must use consistent units. (4) Lead every section with the point. (5) 1,200-2,000 words total. Return only XML.`,
+      devXml: `<TITLE>thesis-driven title for this specific topic — not generic</TITLE>
+<SUBTITLE>one sentence stating the investment insight plainly</SUBTITLE>
+<SECTION id="s1" title="[heading written for THIS thesis only]">300+ words — open with the insight, support with specific data</SECTION>
+<SECTION id="s2" title="[heading written for THIS thesis only]">300+ words — differentiated JPM view, what consensus misses</SECTION>
+<SECTION id="s3" title="[heading written for THIS thesis only]">200+ words — specific actionable recommendation with levels</SECTION>
+[Add more sections if argument demands it]
+<CHART id="chart1" title="[title stating what this proves]" type="Line" yLabel="[label with unit]" source="[source, year]" caption="[what this chart shows]">
+  <DATAPOINTS>Label:value,Label:value,Label:value,Label:value,Label:value</DATAPOINTS>
+</CHART>
+<CHART id="chart2" title="[title stating what this proves]" type="Bar" yLabel="[label with unit]" source="[source, year]" caption="[what this chart shows]">
+  <DATAPOINTS>Label:value,Label:value,Label:value,Label:value</DATAPOINTS>
+</CHART>
+BOTH CHART TAGS ARE NON-NEGOTIABLE.`
     },
     {
       id: 'topMarketTakeaways', icon: '📰', name: 'Top Market Takeaways',
-      tagline: 'Flagship weekly narrative essay — single thesis, 600–900 words, not a list',
-      badges: [{ label: 'Sonnet 4', type: 'model' }, { label: '4,000 tokens', type: 'tokens' }, { label: 'Web Search', type: 'web' }, { label: 'External', type: 'external' }],
-      what: 'The flagship weekly narrative essay. A single investment thesis told as a flowing 600–900 word op-ed. NOT a list. Provocative title, descriptive section headings, JPM Private Bank voice throughout. Distributed externally to UHNW clients via Nexus.',
-      when: 'Weekly publication with the most important investment theme of the week. When there is a single clear thesis that can sustain a 700-word essay. The bread-and-butter external GIS format.',
-      whenNot: 'Not for multiple unrelated themes (use Daily Market Update). Not when the view is reactive and under 200 words (use Desk Commentary). Not when the thesis needs charts and data depth (use Ideas & Insights).',
-      voice: 'Thesis-driven narrative. Provocative, slightly contrarian title. Opening paragraph sets the tension. "The Key" crystallises the central insight in 2-3 sentences. Descriptive narrative headings (not "Section 1"). Closes with portfolio implications. Reads like a well-argued op-ed, not a research note.',
-      structure: 'Title (provocative thesis) → Opening Paragraph (~100 words, state the tension) → The Key (2-3 sentence crystallisation) → Narrative Section 1 with descriptive heading (~175 words) → Narrative Section 2 with descriptive heading (~175 words) → Portfolio Implications (~90 words).',
-      aiRole: 'AI Assist with web_search enabled. Finds the most relevant current market story, then writes a full narrative essay. User can also provide their own brief. Style & Tone chips available: Institutional, Concise, Street Color, High Conviction, Data-Rich, Include Risks.',
-      devModel: 'claude-sonnet-4-20250514', devTokens: '4,000', devSearch: true,
-      devSystem: `You are a senior J.P. Morgan Private Bank strategist. Write a TMT as a thesis-driven narrative essay — NOT a list. Provocative title, flowing narrative with descriptive headings, 600-900 words, polished op-ed style. Return only XML.`,
-      devXml: `<TITLE>provocative thesis-driven title</TITLE>\n<SECTION id="hook" title="Opening Paragraph">~100 words — state the tension</SECTION>\n<SECTION id="thekey" title="The Key">2-3 sentence crystallisation of the central insight</SECTION>\n<SECTION id="section2" title="[Descriptive Narrative Heading]">~175 words with specific data</SECTION>\n<SECTION id="section3" title="[Descriptive Narrative Heading]">~175 words</SECTION>\n<SECTION id="close" title="Portfolio Implications">~90 words — investor so-what</SECTION>`,
+      tagline: 'The flagship weekly narrative essay — one thesis, 600–900 words, a well-argued op-ed not a list',
+      badges: [{ label: 'claude-sonnet-4', type: 'model' }, { label: '4,000 tokens', type: 'tokens' }, { label: 'Web search', type: 'web' }, { label: 'External', type: 'external' }],
+      what: 'The flagship weekly client-facing publication. A single investment thesis told as a flowing 600–900 word narrative essay. NOT a list of market observations. Provocative thesis-driven title, descriptive section headings written for this piece, JPM Private Bank voice throughout.',
+      audience: 'UHNW clients via Nexus. The most widely read format in the suite. Advisors use this to open client conversations — it must give them something to say.',
+      when: 'Weekly — the most important investment theme of that week, written as an essay. When there is one clear thesis that can sustain 700 words. The bread-and-butter external GIS format.',
+      whenNot: 'Not for multiple unrelated market observations (use Daily Market Update). Not for reactive sub-200-word reactions (use Desk Commentary). Not when the thesis needs charts and data depth (use Ideas & Insights). The "Takeaways" name is misleading — it is one flowing essay, not multiple takeaways.',
+      voice: 'Thesis-driven narrative. The title should be slightly provocative and informative — not a topic label. Opening paragraph states the tension. "The Key" crystallises the central insight in 2-3 sentences. Section headings are descriptive narrative headings written for this specific piece — not "Section 1", not "Background". Closes with portfolio implications: specific enough that an advisor can brief a client on it.',
+      structure: 'Title (provocative, thesis-driven) → Opening (~100w, state the tension and the stakes) → The Key (2-3 sentences crystallising the central insight — the most important sentence in the piece) → Two narrative sections with descriptive headings (~175w each, each earns its place) → Portfolio Implications (~90w, specific investor so-what).',
+      wordCount: '600–900 words. The Key is 2-3 sentences maximum. Portfolio Implications is 80-100 words.',
+      aiRole: 'AI Assist with web_search enabled. Finds the most relevant current market story, then writes the full narrative essay. User can also provide their own brief. Style chips: Institutional, Concise, Street Color, High Conviction, Data-Rich, Include Risks. Source selector available.',
+      standard: 'The title test: would an editor at the FT or Economist use this headline? If yes, it is probably right. If it sounds like a research note title ("Update on European Equities"), it needs to be stronger.',
+      devModel: 'claude-sonnet-4-20250514',
+      devTokens: '4,000',
+      devSearch: true,
+      devSystem: `You are a senior J.P. Morgan Private Bank strategist. Write a Top Market Takeaways piece as a flowing narrative essay — NOT a list. Provocative thesis-driven title, descriptive narrative headings specific to this piece, 600-900 words. Op-ed style. Return only XML.`,
+      devXml: `<TITLE>provocative thesis-driven title — not a topic label</TITLE>
+<SECTION id="hook" title="The Opening">~100 words — state the tension, no heading displayed</SECTION>
+<SECTION id="thekey" title="The Key">2-3 sentence crystallisation — the most important sentence in the piece</SECTION>
+<SECTION id="s2" title="[Descriptive narrative heading for this piece]">~175 words with specific data</SECTION>
+<SECTION id="s3" title="[Descriptive narrative heading for this piece]">~175 words</SECTION>
+<SECTION id="close" title="Portfolio Implications">~90 words — specific investor so-what</SECTION>`
     },
     {
       id: 'deskCommentary', icon: '💬', name: 'Desk Commentary',
       tagline: 'Short-form reactive commentary — 100-150 words, conclusion first, JPM/Bridgewater voice',
-      badges: [{ label: 'Haiku 4.5', type: 'model' }, { label: '2,000 tokens', type: 'tokens' }, { label: 'Internal/External', type: 'internal' }],
-      what: 'Short-form reactive commentary. 100–150 words. Written in response to a specific market event or data print. The JPM voice in its most direct form — one tight paragraph leading with conclusion. Used for Fed decisions, economic data prints, central bank moves, earnings surprises, and geopolitical events.',
-      when: 'Any significant market-moving event where the GIS team has a clear view. Must be published within hours of the event. The breaking-news format of the GIS suite.',
-      whenNot: 'Not for opinion pieces without a specific event trigger. Not for anything that requires more than 200 words to say properly.',
-      voice: 'Direct. Conclusion first. Active voice. JPM/Bridgewater institutional tone. No hedging language. One paragraph. No bullet points. "We maintain overweight equities" not "equities may continue to perform well".',
-      structure: 'Title (event + JPM read) → Headline View (one paragraph: conclusion, what happened, why it matters, what to do). Optional additional sections: What Happened, Why It Matters, Our View / Action.',
-      aiRole: 'AI Assist generates a full desk commentary from a brief. Also pre-populated automatically via the Forward Look tab — clicking "Create Desk Commentary" on any upcoming event fills in the event context (date, ticker, consensus, JPM view) as the starting point for the author.',
-      devModel: 'claude-haiku-4-5-20251001', devTokens: '2,000', devSearch: false,
-      devSystem: `You are a senior J.P. Morgan Private Bank strategist. Write a Headline View: 100-150 words, lead with conclusion, direct active voice, JPM/Bridgewater style. Return only XML.`,
-      devXml: `<TITLE>title</TITLE>\n<SECTION id="headline" title="Headline View">100-150 word desk commentary — lead with conclusion, JPM/Bridgewater voice</SECTION>`,
+      badges: [{ label: 'claude-haiku-4-5', type: 'model' }, { label: '2,000 tokens', type: 'tokens' }, { label: 'Internal/External', type: 'internal' }],
+      what: 'Short-form reactive commentary on a specific market event or data print. 100–150 words. One tight paragraph. The JPM voice in its most concentrated form: the conclusion first, then the supporting evidence, then the so-what. Used for Fed decisions, economic data prints, central bank moves, earnings surprises, geopolitical events.',
+      audience: 'Advisors primarily (internal), sometimes shared externally with clients when the event is significant enough.',
+      when: 'Any market-moving event where GIS has a clear view. Must be published within hours — ideally within 60 minutes of the event. The "breaking news" format of the GIS suite. Also pre-populated automatically via the Forward Look tab when clicking "Create Desk Commentary" on any upcoming event.',
+      whenNot: 'Not for opinion pieces without a specific event trigger. Not when more than 200 words are needed to say it properly (use Top Market Takeaways instead). Not for anything that needs a chart.',
+      voice: 'Direct. Conclusion first, always. Active voice. No hedging. "We maintain overweight equities" not "equities may continue to show resilience". One paragraph, no sub-headings. JPM/Bridgewater institutional conviction tone.',
+      structure: 'Title (event name + JPM read, declarative not interrogative) → Headline View (one paragraph: conclusion stated in sentence 1, what happened in sentence 2, why it matters in sentence 3, what to do in sentence 4-5).',
+      wordCount: '100–150 words for the Headline View. Absolute maximum 200 words including title. If you are over, cut.',
+      aiRole: 'AI Assist generates a full desk commentary from a one-line brief. Forward Look integration: clicking "Create Desk Commentary" on any upcoming event pre-populates with event date, ticker, consensus estimate, last result, and JPM view as the context.',
+      standard: 'The one-sentence test: can the entire view be stated in one declarative sentence? "NVIDIA beat on all lines — Blackwell is ahead of schedule and we maintain overweight." That is a Desk Commentary title. If it cannot be stated in one sentence, the view is not clear enough yet.',
+      devModel: 'claude-haiku-4-5-20251001',
+      devTokens: '2,000',
+      devSearch: false,
+      devSystem: `You are a senior J.P. Morgan Private Bank strategist. Write a Desk Commentary Headline View: 100-150 words, lead with conclusion in sentence 1, direct active voice, no hedging language, JPM/Bridgewater conviction tone. Return only XML.`,
+      devXml: `<TITLE>Event name + JPM read — declarative</TITLE>
+<SECTION id="headline" title="Headline View">100-150 words — conclusion in sentence 1, what happened, why it matters, what to do. One paragraph.</SECTION>`
     },
     {
       id: 'specialistSpotlight', icon: '👤', name: 'Specialist Spotlight',
-      tagline: 'Named specialist\'s direct view on a specific instrument or theme — under 200 words',
-      badges: [{ label: 'Haiku 4.5', type: 'model' }, { label: '2,000 tokens', type: 'tokens' }, { label: 'External', type: 'external' }],
-      what: 'A focused piece from a named GIS specialist on a specific instrument, asset class, or theme they cover directly. Under 200 words. The most personal and direct of the GIS formats — written as the specialist own view, not the broader GIS team view.',
-      when: 'When a specific GIS specialist has a high-conviction view on a name or instrument they directly cover. When advisors need a short, quotable, named view to share in a client conversation.',
-      whenNot: 'Not for broad macro views (use Macro & Markets). Not for multi-topic pieces. Not when no named specialist is being featured.',
-      voice: 'Direct and specific. Named and accountable — the specialist is putting their name to this. First-person specialist voice.',
-      structure: 'Title → The Lead (why this matters now) → The View (specialist conviction) → Why Now (timing rationale) → Advisor Takeaway (what advisors should do with this).',
-      aiRole: 'AI Assist generates a draft from a brief. Advisor completes the author name before publishing.',
-      devModel: 'claude-haiku-4-5-20251001', devTokens: '2,000', devSearch: false,
-      devSystem: `You are a senior J.P. Morgan Private Bank strategist writing a Specialist Spotlight — under 200 words, direct specialist voice. Return only XML.`,
-      devXml: `<TITLE>title</TITLE>\n<SECTION id="lead" title="The Lead">content</SECTION>\n<SECTION id="view" title="The View">content</SECTION>\n<SECTION id="why_now" title="Why Now">content</SECTION>\n<SECTION id="takeaway" title="Advisor Takeaway">content</SECTION>`,
+      tagline: "Named specialist's direct view on a specific instrument — under 200 words, accountable and personal",
+      badges: [{ label: 'claude-haiku-4-5', type: 'model' }, { label: '2,000 tokens', type: 'tokens' }, { label: 'External', type: 'external' }],
+      what: "A focused piece from a named GIS specialist on a specific instrument, asset class, or theme they cover directly. Under 200 words. The most personal and direct of the GIS formats — the specialist puts their name to a specific, accountable view. Not the GIS team view — this person's view, right now.",
+      audience: "UHNW clients and advisors. Advisors use this as a direct quotable view in client conversations: \"Kriti's view on NVIDIA is...\"",
+      when: 'When a specific GIS specialist has a high-conviction view on a name or instrument they directly cover. When advisors need a short, named, quotable view for a client conversation. One view, one specialist, one name, one instrument.',
+      whenNot: 'Not for broad macro views (use Macro & Markets). Not for multi-topic pieces. Not when no named specialist is being featured — the piece requires an author.',
+      voice: 'Personal and direct. The specialist is speaking. "My view: the setup is compelling." or "We see the risk/reward favouring..." Named and accountable. Punchy. Not committee language.',
+      structure: "Title → The Lead (why this instrument matters now, one paragraph) → The View (the specialist's conviction, the specific case) → Why Now (timing: why this piece, today, not six months ago) → Advisor Takeaway (what advisors should do with this view, specific).",
+      wordCount: 'Under 200 words total. The Lead and The View together should be 100-130 words. Why Now and Advisor Takeaway 30-40 words each.',
+      aiRole: 'AI Assist generates a draft. Author name must be filled in before publishing — the piece is meaningless without it.',
+      standard: "The name test: if you remove the author's name, does the piece lose something? If not, it is not specific enough. The Specialist Spotlight's value is that Kriti Gupta is on record saying this about NVIDIA. If it could have been written by anyone, rewrite it.",
+      devModel: 'claude-haiku-4-5-20251001',
+      devTokens: '2,000',
+      devSearch: false,
+      devSystem: `You are a senior J.P. Morgan Private Bank strategist writing a Specialist Spotlight. Under 200 words total. Personal and direct — this specialist is putting their name to this view. Named and accountable. Return only XML.`,
+      devXml: `<TITLE>instrument + specialist view — declarative</TITLE>
+<SECTION id="lead" title="The Lead">Why this instrument matters now. One paragraph.</SECTION>
+<SECTION id="view" title="The View">The specialist's conviction. The specific case for or against.</SECTION>
+<SECTION id="why_now" title="Why Now">Timing — why this piece, today.</SECTION>
+<SECTION id="takeaway" title="Advisor Takeaway">What advisors should do with this. Specific.</SECTION>`
     },
     {
       id: 'dailyMarketUpdate', icon: '📈', name: 'Daily Market Update',
-      tagline: 'Internal morning briefing — overnight moves, three stories, JPM view, advisor-facing',
-      badges: [{ label: 'Haiku 4.5', type: 'model' }, { label: '2,000 tokens', type: 'tokens' }, { label: 'Web Search', type: 'web' }, { label: 'Internal', type: 'internal' }],
-      what: 'The morning briefing prepared by GIS for advisor teams ahead of client calls. Covers overnight market moves, key stats by region (APAC, EMEA, Americas), three notable stories with JPM view and client relevance, and any housekeeping PSAs. Sent daily across regions. Structured in a consistent format so advisors can scan in under 2 minutes.',
-      when: 'Every trading day, produced per region (APAC, EMEA, LATAM, US). Must be ready before 7:30am local time for each region.',
-      whenNot: 'Not for external distribution. Not for in-depth analysis — stories are 50 words each maximum.',
-      voice: 'Efficient and functional. Scannable. Bullet headline stats. Each story: factual summary, JPM view in one sentence, client relevance in one sentence.',
-      structure: 'Title (region + date) → Key Stats (2-3 overnight move bullets) → Market Commentary (~150 words) → Story 1 headline + 50-word summary + Our View + Why It Matters → Story 2 → Story 3 → PSAs.',
-      aiRole: 'Generate Idea uses web_search to find overnight market moves and the top three stories. The AI finds real news, extracts the JPM-relevant angle, and writes in the structured format. Typically completes in under 15 seconds.',
-      devModel: 'claude-haiku-4-5-20251001', devTokens: '2,000', devSearch: true,
-      devSystem: `You are a J.P. Morgan Private Bank GIS strategist writing the daily morning briefing for advisors. Return only XML.`,
-      devXml: `<TITLE>Daily Market Update — [Region] — [Date]</TITLE>\n<SECTION id="keystats" title="Key Stats">Overnight moves bullets</SECTION>\n<SECTION id="commentary" title="Market Commentary">~150 words</SECTION>\n<SECTION id="interesting1" title="1. [Story headline]">50-word summary</SECTION>\n<SECTION id="view1" title="Our View">JPM view on story 1</SECTION>\n<SECTION id="why1" title="Why It Matters">Client relevance</SECTION>\n[repeat for stories 2 and 3]\n<SECTION id="psa" title="PSAs">Leave blank unless relevant</SECTION>`,
+      tagline: 'Internal morning briefing — scannable in under 2 minutes, advisor-ready before 7:30am',
+      badges: [{ label: 'claude-haiku-4-5', type: 'model' }, { label: '2,000 tokens', type: 'tokens' }, { label: 'Web search', type: 'web' }, { label: 'Internal', type: 'internal' }],
+      what: 'The morning briefing produced by GIS for advisor teams ahead of client calls. Four regional variants (APAC, EMEA, LATAM, US). Covers overnight moves, three notable stories each with JPM view and client relevance, and any housekeeping PSAs. Designed to be scannable in under 2 minutes.',
+      audience: "Advisor teams. Not for clients. Enables advisors to brief clients on the morning's most important stories before market open.",
+      when: 'Every trading day, per region. Ready before 7:30am local time. Generate Idea uses web_search to find overnight moves and the top three stories of the morning.',
+      whenNot: 'Never for external distribution. Never for in-depth analysis — each story is capped at ~50 words.',
+      voice: 'Efficient and scannable. Bullet stats for key overnight moves. Each story: what happened (facts, numbers) → our view (one JPM sentence) → why it matters (client relevance, one sentence). No flourish. Function over form.',
+      structure: 'Title (region + date) → Key Stats (2-3 overnight move bullets with levels and % change) → Market Commentary (~150w) → Story 1 (headline + 50w + Our View + Why It Matters) → Story 2 → Story 3 → PSAs.',
+      wordCount: 'Market Commentary ~150w. Each story + view + relevance ~100w. PSAs as needed. Total ~450-600w.',
+      aiRole: "Generate Idea uses web_search to find overnight market moves and today's top three stories. Fastest AI format in the suite — typically completes in under 15 seconds. Generate per region for regional variants.",
+      standard: 'The 2-minute test: can an advisor read this entire update in 2 minutes and know exactly what to say in their first three client calls? If not, it is too long or too vague.',
+      devModel: 'claude-haiku-4-5-20251001',
+      devTokens: '2,000',
+      devSearch: true,
+      devSystem: `You are a J.P. Morgan Private Bank GIS strategist writing the daily morning briefing for advisor teams. Scannable, functional, specific. Return only XML.`,
+      devXml: `<TITLE>Daily Market Update — [Region] — [Date]</TITLE>
+<SECTION id="keystats" title="Key Stats">Overnight moves: S&P +/-X%, [index] +/-X%, [commodity/rate] at X. 2-3 bullets.</SECTION>
+<SECTION id="commentary" title="Market Commentary">~150 words — what drove overnight moves, key themes</SECTION>
+<SECTION id="interesting1" title="1. [Story headline]">~50 words — what happened, specific numbers</SECTION>
+<SECTION id="view1" title="Our View">JPM view on story 1 — one clear sentence</SECTION>
+<SECTION id="why1" title="Why It Matters">Client relevance — one sentence</SECTION>
+[Repeat for stories 2 and 3]
+<SECTION id="psa" title="PSAs">Leave blank unless relevant</SECTION>`
     },
     {
       id: 'eventResponse', icon: '⚡', name: 'Event Response',
-      tagline: 'Live rolling commentary during market-moving events — 40-60 words per update',
-      badges: [{ label: 'Haiku 4.5', type: 'model' }, { label: '2,000 tokens', type: 'tokens' }, { label: 'External', type: 'external' }],
-      what: 'Live rolling commentary during a market-moving event: central bank decision, geopolitical shock, major data print. Published in real-time updates of 40-60 words each. Reactive, direct, desk commentary style. Multiple timestamped updates can be added as the event unfolds.',
-      when: 'Breaking geopolitical events. Fed and ECB decisions. Major earnings surprises. Macro shocks (oil spike, flash crash, credit event). The event is actively moving markets.',
-      whenNot: 'Not for events that have already resolved. Not for opinion pieces written 24+ hours after the event.',
-      voice: 'Rolling news feed. Each update is self-contained. Timestamped. Reactive and direct.',
-      structure: 'Title / event headline → Opening context paragraph → Update 1 (timestamp, title, 50-word content) → Update 2 (market implications) → Update 3 (JPM view). Additional updates added as event develops.',
-      aiRole: 'AI Assist generates the initial response structure with three timestamped updates. User adds live updates manually as the event develops.',
-      devModel: 'claude-haiku-4-5-20251001', devTokens: '2,000', devSearch: false,
-      devSystem: `You are a J.P. Morgan Private Bank strategist. Write a live event response feed. Desk commentary style — 40-60 words per update. Reactive, direct. Return only XML.`,
-      devXml: `<TITLE>event title</TITLE>\n<SECTION id="hook" title="Opening Context">scene-setting paragraph</SECTION>\nUpdates follow as timestamped objects.`,
+      tagline: 'Live rolling commentary during market-moving events — 40-60 words per timestamped update',
+      badges: [{ label: 'claude-haiku-4-5', type: 'model' }, { label: '2,000 tokens', type: 'tokens' }, { label: 'External', type: 'external' }],
+      what: 'Live rolling commentary published during a market-moving event as it unfolds. Multiple timestamped updates of 40-60 words each, each self-contained. Used for central bank decisions, geopolitical shocks, major earnings surprises, macro shocks.',
+      audience: "Clients and advisors who need JPM's read on a fast-moving event in real time.",
+      when: 'Breaking events where markets are actively moving and GIS has a view. The event is not resolved — it is unfolding. Fed day. ECB decision day. A geopolitical shock. A major earnings print.',
+      whenNot: 'Not for events that have already resolved (use Desk Commentary). Not for opinion pieces written 24+ hours after the event. Not when the GIS view requires more than 3-4 paragraphs to express (use Top Market Takeaways).',
+      voice: 'Rolling news feed tone. Each update is self-contained and time-stamped. Reactive and direct. "Oil has surged 12%. Our initial view: severe but potentially short-duration shock." Admits uncertainty where it exists.',
+      structure: 'Title + event summary → Opening context paragraph → Update 1 (timestamp + 50w, initial reaction) → Update 2 (market implications as they emerge) → Update 3 (JPM view, positioned). Additional updates added manually.',
+      wordCount: '40-60 words per update. 3 updates minimum from AI generation. User adds live updates manually as the event develops.',
+      aiRole: 'AI Assist generates the initial event response structure with 3 timestamped updates. User adds live updates manually.',
+      standard: "The real-time test: if this appeared in a client's inbox 20 minutes after the event broke, would it add value? Or would they already know everything in it from Bloomberg?",
+      devModel: 'claude-haiku-4-5-20251001',
+      devTokens: '2,000',
+      devSearch: false,
+      devSystem: `You are a J.P. Morgan Private Bank strategist writing live event response commentary. 40-60 words per update. Reactive, direct, timestamped. Return only XML.`,
+      devXml: `<TITLE>Event name — JPM initial read</TITLE>
+<SECTION id="hook" title="Opening Context">Scene-setting paragraph — what happened and why it matters</SECTION>
+Updates stored as { id, title, timestamp, content } objects — added as event develops`
     },
     {
       id: 'playground', icon: '🎯', name: 'The Playground',
-      tagline: 'Free-form thinking space — write anything, challenge your thinking, create content from it',
-      badges: [{ label: 'Sonnet 4', type: 'model' }, { label: '2,000 tokens', type: 'tokens' }, { label: 'GIS Only', type: 'internal' }],
-      what: 'A free-form writing and thinking space with no required structure. Write a half-formed idea, a question, a data point, a thesis. Use it as a scratch pad before committing to a template. Sources can be toggled (Full Web, Trusted Web, JPM IB, JPM Private Bank, Street Views with individual firm selection including Goldman Sachs, Morgan Stanley, UBS, Citi, Deutsche Bank, BofA, Barclays).',
-      when: 'Early-stage idea development. When you have a thesis but do not know which template fits yet. When you want to stress-test an argument before writing the full piece.',
-      whenNot: 'Not for finalised content. Not a substitute for the structured templates.',
-      voice: 'No constraints — this is your scratch pad. The AI counterpart (Challenge My Thinking) responds as a rigorous external research peer.',
-      structure: 'Three-panel layout: Sources (left) → Writing area (centre) → Challenge responses (right). Word count in Sources panel suggests the most appropriate template as you write. "Create from this" buttons appear above 50 words and highlight the best-fit template.',
-      aiRole: '"Challenge My Thinking" calls claude-sonnet-4 with the selected sources injected as context. Challenges are threaded chronologically in the right panel, each timestamped and showing which sources were active. 2,000 tokens per challenge call.',
-      devModel: 'claude-sonnet-4-20250514', devTokens: '2,000 (per challenge)', devSearch: true,
-      devSystem: `You are a senior external research counterpart — think a seasoned economist at a rival institution, a macro PM, or a well-regarded sell-side strategist. [source context injected]. Your job: 1. Challenge the key assumptions. 2. Add context and data the author may have missed. 3. Suggest angles, complications, or risks that would strengthen the thinking. 4. Point to 2-3 related themes. Be direct, rigorous, constructive. Max 300 words, 3-4 numbered points.`,
+      tagline: 'Free-form thinking space — write anything, challenge it, then create content from it. GIS only.',
+      badges: [{ label: 'claude-sonnet-4', type: 'model' }, { label: '2,000 tokens/challenge', type: 'tokens' }, { label: 'Web search', type: 'web' }, { label: 'GIS Only', type: 'gisonly' }],
+      what: 'A free-form writing and thinking space with no required structure. Write a half-formed idea, a question, a data point that caught your attention, a thesis you want to stress-test. No template, no word count requirement, no structure. The most open-ended format in the suite.',
+      audience: 'GIS strategists. Not for client-facing output directly — the Playground produces thinking, not publishable pieces. "Create from this" buttons convert playground content into publishable templates.',
+      when: 'Early-stage idea development. Before you know which template fits. When you want to stress-test a thesis before committing to a full piece. When you want external pushback on a forming view.',
+      whenNot: "Not for finalised, client-ready content. Not a substitute for the structured templates. The Playground is a kitchen — you cook here, but you don't serve from here.",
+      voice: 'No constraint. This is your scratch pad.',
+      structure: 'Three-panel layout: Sources (left, 200px) → Writing area (centre, flex) → Challenge responses (right, 320px). Sources panel: Full Web 🌐, Trusted Web ✅, JPM IB 🏦, JPM Private Bank 🔒, Street Views 📊 (with Goldman, MS, UBS, Citi, Deutsche, BofA, Barclays, HSBC checkboxes). Word count panel shows territory guidance as you write. "Create from this" buttons appear at 50 words, highlight best-fit template based on word count.',
+      wordCount: 'No limit. Word count tracker shows: under 50w → keep going; 50-150w → Desk Commentary territory; 150-400w → Ideas & Insights territory; 400w+ → Macro & Markets territory.',
+      aiRole: '"Challenge My Thinking" calls claude-sonnet-4 (2,000 tokens per call) with the selected sources injected as context. The AI responds as a senior external research counterpart — rigorous, direct, constructive. Challenges are threaded chronologically in the right panel, each showing which sources were active. Source selection injects context into the system prompt and enables web_search for Full Web and Trusted Web sources.',
+      standard: 'The playground has no quality standard — it is a thinking tool. The standard applies when you convert playground content into a template.',
+      devModel: 'claude-sonnet-4-20250514',
+      devTokens: '2,000 (per challenge)',
+      devSearch: true,
+      devSystem: `You are a senior external research counterpart — think a seasoned economist at a rival institution, a macro PM, or a well-regarded sell-side strategist. [Source context injected based on selections.]
+
+Your job:
+1. Challenge the key assumptions in the thinking provided
+2. Add context, data, and angles the author may have missed
+3. Point to complications, risks, or second-order effects that would strengthen the piece
+4. Suggest 2-3 related themes worth exploring
+
+Be direct, rigorous, and constructive. Max 300 words, 3-4 numbered points. Write as a peer, not a teacher.`
     },
   ];
 
   const scoringCriteria = [
-    { label: 'Lead with Conclusion', weight: 15, desc: 'Does the opening sentence state the JPM view unambiguously?' },
-    { label: 'Data & Evidence', weight: 15, desc: 'Are specific data points, levels, or facts cited to support the argument?' },
-    { label: 'Differentiation', weight: 15, desc: 'Does this piece say something the market or competitors have not already said?' },
-    { label: 'Voice & Tone', weight: 10, desc: 'Does it sound like JPM Private Bank — calm, measured, intellectually confident, never sensational?' },
-    { label: 'Advisor Utility', weight: 10, desc: 'Can an advisor use this in a client conversation within 24 hours of reading it?' },
-    { label: 'Word Count Discipline', weight: 10, desc: 'Does the piece respect the word count guidelines for its template type?' },
-    { label: 'Structure Integrity', weight: 10, desc: 'Does it follow the correct section structure for its publication type?' },
-    { label: 'No Marketing Language', weight: 10, desc: 'Is it free of hyperbole, superlatives, and promotional language?' },
-    { label: 'Certainty Calibration', weight: 5, desc: 'Are confidence levels appropriate — neither over-certain nor over-hedged?' },
-    { label: 'Freshness', weight: 5, desc: 'Is this tied to something current, or does it feel evergreen and undated?' },
+    { label: 'Lead with Conclusion', weight: 15, desc: 'Does the opening sentence state the JPM view unambiguously? Not "in this piece we examine..." — the conclusion, in sentence 1.' },
+    { label: 'Data & Evidence', weight: 15, desc: 'Are specific data points, levels, percentages, or facts cited to support the argument? "Up 12%" not "significantly higher".' },
+    { label: 'Differentiation', weight: 15, desc: 'Does this piece say something the reader could not have found in Bloomberg or a Goldman note this morning? The JPM differentiated view must be identifiable.' },
+    { label: 'Voice & Tone', weight: 10, desc: 'Does it sound like JPM Private Bank — calm, measured, intellectually confident? No hedging language, no marketing language, no "we remain cautious".' },
+    { label: 'Advisor Utility', weight: 10, desc: 'Can an advisor read this and brief a client on it within 24 hours? Is there a clear "what to do"?' },
+    { label: 'Word Count Discipline', weight: 10, desc: 'Does the piece respect the word count guidelines for its template? Desk Commentary should not be 400 words. I&I should not be 600.' },
+    { label: 'Structure Integrity', weight: 10, desc: 'Does it follow the structural guidance for its template? No generic section headings in I&I and M&M. No bullet points in essay formats.' },
+    { label: 'No Marketing Language', weight: 10, desc: 'Free of hyperbole, superlatives, "exciting", "compelling", "well-positioned", "navigate". If legal would love it, it is probably wrong.' },
+    { label: 'Certainty Calibration', weight: 5, desc: 'Appropriate confidence — neither over-certain ("oil will hit $90") nor over-hedged ("oil could potentially move toward levels around $90 depending on factors").' },
+    { label: 'Freshness', weight: 5, desc: 'Is this tied to something current? Could this piece have been written six months ago? If yes, what is new about the argument today?' },
+  ];
+
+  const badgeLegend = [
+    { label: 'claude-sonnet-4', color: '#0A1A2F', desc: 'claude-sonnet-4-20250514 — highest quality model' },
+    { label: 'claude-haiku-4-5', color: '#2A7F8F', desc: 'claude-haiku-4-5-20251001 — fast, efficient model' },
+    { label: 'Web search', color: '#059669', desc: 'live web_search tool enabled — finds current data' },
+    { label: 'External', color: '#C1A364', desc: 'published externally to UHNW clients via Nexus' },
+    { label: 'Internal', color: '#6B7280', desc: 'advisor-facing only, not for client distribution' },
+    { label: 'GIS Only', color: '#6B5B95', desc: 'available to GIS team members only' },
+    { label: 'Source selector', color: '#2563EB', desc: 'user can select sources that inform AI generation' },
   ];
 
   return (
-    <div style={{ paddingBottom: 40 }}>
-      <div style={{ display: 'flex', borderBottom: '2px solid #E8E0D0', background: '#fff', padding: '0 32px' }}>
-        {[{ id: 'publications', label: 'Publications & Prompts' }, { id: 'style', label: 'Style Guide' }, { id: 'scoring', label: 'Content Scoring' }].map(s => (
+    <div style={{ paddingBottom: 60 }}>
+      {/* Sub-nav */}
+      <div style={{ display: 'flex', borderBottom: '2px solid #E8E0D0', background: '#fff', padding: '0 32px', position: 'sticky', top: 0, zIndex: 10 }}>
+        {[{ id: 'publications', label: '📚 Publications & Prompts' }, { id: 'style', label: '✍️ Style Guide' }, { id: 'scoring', label: '★ Content Scoring' }].map(s => (
           <button key={s.id} onClick={() => setSection(s.id)} style={{ padding: '14px 20px', border: 'none', background: 'none', borderBottom: section === s.id ? '2px solid #0A1A2F' : '2px solid transparent', fontSize: 13, fontWeight: section === s.id ? 700 : 400, color: section === s.id ? '#0A1A2F' : '#4A5568', cursor: 'pointer', marginBottom: -2 }}>
             {s.label}
           </button>
         ))}
       </div>
 
+      {/* Publications & Prompts */}
       {section === 'publications' && (
         <div style={{ padding: '28px 32px' }}>
-          <div style={{ fontFamily: 'Georgia, serif', fontSize: 22, color: '#0A1A2F', fontWeight: 400, marginBottom: 8 }}>Publications & Prompts</div>
-          <div style={{ fontSize: 13, color: '#4A5568', lineHeight: 1.7, maxWidth: 720, marginBottom: 20 }}>
-            Every GIS publication type has a dedicated voice, structure, and AI prompt engineered specifically for it. Expand any publication below to see the full plain-English guide and the exact system prompt, model, token limit, and XML output structure driving the AI generation.
+          <div style={{ fontFamily: 'Georgia, serif', fontSize: 24, color: '#0A1A2F', fontWeight: 400, marginBottom: 8 }}>Publications & Prompts</div>
+          <div style={{ fontSize: 13, color: '#4A5568', lineHeight: 1.8, maxWidth: 760, marginBottom: 20 }}>
+            Eight publication types. Each has a distinct voice, structure, audience, and AI prompt engineered specifically for it. Expand any publication to see the full editorial guide — when to use it, how to write it, what makes it good — plus the exact model, token limit, system prompt, and XML output structure driving the AI generation.
           </div>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 24 }}>
-            {[{ label: 'Sonnet 4', color: '#0A1A2F', desc: 'claude-sonnet-4-20250514' }, { label: 'Haiku 4.5', color: '#2A7F8F', desc: 'claude-haiku-4-5-20251001' }, { label: 'Web Search', color: '#059669', desc: 'Live web_search enabled' }, { label: 'External', color: '#C1A364', desc: 'Published to Nexus clients' }, { label: 'Internal', color: '#6B7280', desc: 'Advisor-facing only' }].map(b => (
-              <div key={b.label} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '4px 10px', background: b.color + '12', borderRadius: 20, border: '1px solid ' + b.color + '30' }}>
-                <div style={{ width: 6, height: 6, borderRadius: '50%', background: b.color }} />
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 28 }}>
+            {badgeLegend.map(b => (
+              <div key={b.label} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 11px', background: b.color + '12', borderRadius: 20, border: '1px solid ' + b.color + '25' }}>
+                <div style={{ width: 6, height: 6, borderRadius: '50%', background: b.color, flexShrink: 0 }} />
                 <span style={{ fontSize: 10, fontWeight: 700, color: b.color }}>{b.label}</span>
-                <span style={{ fontSize: 10, color: '#4A5568' }}>— {b.desc}</span>
+                <span style={{ fontSize: 10, color: '#6B7280' }}>— {b.desc}</span>
               </div>
             ))}
           </div>
@@ -7855,74 +7906,88 @@ const AboutTab = () => {
         </div>
       )}
 
+      {/* Style Guide */}
       {section === 'style' && (
-        <div style={{ padding: '28px 32px', maxWidth: 800 }}>
-          <div style={{ fontFamily: 'Georgia, serif', fontSize: 22, color: '#0A1A2F', fontWeight: 400, marginBottom: 6 }}>GIS Style Guide</div>
-          <div style={{ fontSize: 13, color: '#4A5568', marginBottom: 28, lineHeight: 1.7 }}>The editorial standards that apply across all GIS publications. When in doubt, ask: would a senior JPM Private Bank strategist be comfortable putting their name to this?</div>
-          <StyleSection title="Voice">
-            The JPM Private Bank GIS voice is calm, measured, and intellectually confident. It does not shout. It does not hedge into meaninglessness. It takes a position and defends it with evidence. Think of the best economist you know writing for their most intelligent client — not writing for a committee, not writing for legal compliance, but writing to genuinely help someone think better about their money.
-            <br /><br />
-            The voice is not sell-side research. It is not a press release. It is not a marketing document. It is the considered view of a senior investment professional who has thought hard about a question and is now sharing that thinking with a UHNW client who deserves a straight answer.
+        <div style={{ padding: '28px 32px', maxWidth: 820 }}>
+          <div style={{ fontFamily: 'Georgia, serif', fontSize: 24, color: '#0A1A2F', fontWeight: 400, marginBottom: 8 }}>GIS Style Guide</div>
+          <div style={{ fontSize: 13, color: '#4A5568', marginBottom: 32, lineHeight: 1.8 }}>The editorial standards that apply across every GIS publication. These are not suggestions — they are the standards that distinguish J.P. Morgan Private Bank content from generic institutional research. When in doubt, ask: would a senior GIS strategist be comfortable putting their name to this sentence?</div>
+
+          <StyleSection title="The JPM Private Bank Voice">
+            The JPM Private Bank GIS voice is calm, measured, and intellectually confident. It does not shout. It does not hedge into meaninglessness. It takes a position and defends it with evidence, then tells the reader what to do.<br /><br />
+            Think of the best senior economist you know explaining something important to their most intelligent client — not writing for a committee, not writing for legal compliance, but genuinely trying to help someone think better about their portfolio.<br /><br />
+            The voice is not sell-side research. Not a press release. Not a marketing document. It is the considered view of a senior investment professional who has thought hard about a question and is sharing that thinking directly, with a client who deserves a straight answer.
           </StyleSection>
-          <StyleSection title="Lead with the Conclusion">
-            Every GIS piece — from the 100-word Desk Commentary to the 3,000-word Macro & Markets essay — leads with the conclusion. The reader should never have to wait until paragraph four to understand what the JPM view is.
-            <br /><br />
-            <em>Wrong:</em> "In this note we examine the outlook for European equities in light of recent ECB actions..."<br />
+
+          <StyleSection title="Lead with the Conclusion — Always">
+            Every GIS piece — from the 100-word Desk Commentary to the 3,000-word Macro & Markets essay — leads with the conclusion. The reader should never have to wait until paragraph four to understand what the JPM view is.<br /><br />
+            <em>Wrong:</em> "In this note we examine the outlook for European equities in light of recent ECB actions and geopolitical developments across the region..."<br />
             <em>Right:</em> "European equities are undervalued on every metric that matters. We are overweight."<br /><br />
-            This is not the style of academic writing. It is the style of someone who respects the reader's time.
+            This is not academic writing. It is the style of someone who respects the reader's time. The thesis in sentence one. Always.
           </StyleSection>
+
           <StyleSection title="Titles and Headlines">
-            Titles should be slightly contrarian, specific, and informative. They should tell the reader something — not just label the topic.
-            <br /><br />
-            <em>Weak:</em> "Update on the US Economy" | "Why We Like Gold" | "NVDA Q1 Earnings"<br />
-            <em>Strong:</em> "The Fed Is Not Going to Save You This Time" | "Gold Has Two Years Left in This Rally" | "NVDA Beats on All Lines — Blackwell Ramp Ahead of Model"<br /><br />
-            The title is the most-read sentence in any publication. It must earn the click.
+            Titles must be slightly contrarian, specific, and informative. They tell the reader something — not just label the topic.<br /><br />
+            <em>Weak:</em> "Update on the US Economy" · "Why We Like Gold" · "NVDA Q1 Earnings Commentary"<br />
+            <em>Strong:</em> "The Fed Is Not Going to Save You This Time" · "Gold Has Two Years Left in This Rally" · "NVDA Beats on All Lines — Blackwell Ramp Ahead of Model"<br /><br />
+            The title is the most-read sentence in any publication. It determines whether an advisor opens the piece. It must earn the click.<br /><br />
+            The title test: would an editor at the FT or Economist use this headline? If not, make it stronger.
           </StyleSection>
+
+          <StyleSection title="Section Headings — For I&I and M&M">
+            Ideas & Insights and Macro & Markets pieces must use section headings written for that specific piece. Generic headings are a sign that the structure was forced before the argument was clear.<br /><br />
+            <em>Generic (wrong):</em> "The Opportunity" · "What the Data Shows" · "The JPM View" · "Background" · "Analysis" · "Conclusion"<br />
+            <em>Specific (right):</em> "Why the Semiconductor Supply Chain Is a Bigger Risk Than Oil" · "The Carry Trade Unwind Has Only Just Begun" · "What the Fed Funds Futures Market Is Missing"<br /><br />
+            If a heading could appear in any I&I ever written, rewrite it for this one.
+          </StyleSection>
+
           <StyleSection title="Language Rules">
-            <strong>Never use:</strong> "headwinds", "tailwinds", "navigate", "challenging environment", "prudent", "well-positioned", "at this juncture", "going forward", "exciting opportunity", "it is worth noting". These phrases signal lazy writing.
-            <br /><br />
-            <strong>Always prefer:</strong> Active voice. Concrete over abstract. Specific data over vague assertions. Short sentences. "We are overweight equities" over "Equities may represent a compelling opportunity in the current environment."
-            <br /><br />
-            <strong>Numbers:</strong> Always use specific figures where available. "Up 12%" not "significantly higher". "3.2% yield" not "attractive yield". "Q4 2026" not "later this year".
+            <strong>Never use:</strong> "headwinds", "tailwinds", "navigate", "challenging environment", "prudent", "well-positioned", "at this juncture", "going forward", "exciting opportunity", "it is worth noting", "it is important to note", "in conclusion". These phrases signal lazy writing and dilute the JPM voice.<br /><br />
+            <strong>Always prefer:</strong> Active voice over passive. Concrete over abstract. Specific data over vague assertions. Short sentences. "We are overweight" over "an overweight position may be warranted". Named sources over vague attribution.<br /><br />
+            <strong>Numbers:</strong> Specific figures always. "Up 12%" not "significantly higher". "3.2% yield" not "an attractive yield". "Q4 2026" not "later this year". "75 basis points" not "a significant tightening".<br /><br />
+            <strong>Certainty language:</strong> "We expect" is appropriate. "We anticipate" is acceptable. "We believe" is weak — prefer "our view is" or state the position directly. "Oil will hit $90" is overconfident. "Oil could potentially move toward levels around $90" is a waste of everyone's time. "Our base case is oil at $90 by year-end" is correct.
           </StyleSection>
-          <StyleSection title="Certainty Calibration">
-            GIS pieces should be appropriately confident — not over-certain, not over-hedged. A position is a position. If the GIS team is overweight, say overweight.
-            <br /><br />
-            <em>Appropriate:</em> "We expect the Fed to cut twice in H2 2026." | "Our base case is oil at $90 by year-end."<br />
-            <em>Over-certain:</em> "Oil will reach $90." | "The Fed will cut in September."<br />
-            <em>Over-hedged:</em> "Oil could potentially reach levels around $90 depending on various factors."
+
+          <StyleSection title="Charts and Data">
+            Charts in Ideas & Insights and the Visual Story are not decoration — they carry part of the argument. A chart in an I&I should prove something the text alone cannot.<br /><br />
+            Chart title rules: the title states the finding, not the topic. <em>Wrong:</em> "Gold Price 2020-2026". <em>Right:</em> "Gold Has Outperformed Every Major Asset Class for Three Consecutive Years".<br /><br />
+            All values in a chart must use consistent units. Never mix percentages and basis points in the same chart. Never mix billions and millions. The chart parser enforces this — inconsistent units produce broken charts.<br /><br />
+            Data must be real. Illustrative or approximate values are not acceptable in client-facing content. If you do not have the data, do not include the chart.
           </StyleSection>
+
           <StyleSection title="The Differentiation Test" last>
-            Before publishing, ask: what does this piece say that the reader could not have found in Bloomberg, Reuters, or a Goldman note this morning? If the answer is "nothing", the piece needs more work.
-            <br /><br />
-            Differentiation comes from: the JPM house view applied to a specific security or market; a data angle the reader has not seen; a reframing of the consensus that is slightly contrarian but defensible; a clear "what to do" that commits to a recommendation.
-            <br /><br />
-            The GIS brand is built on differentiated, conviction-led investment thinking. Every piece should reflect that.
+            Before publishing any GIS piece, ask: what does this say that the reader could not have found in Bloomberg, Reuters, or a Goldman Sachs note this morning? If the answer is "nothing", the piece is not ready.<br /><br />
+            Differentiation comes from four places: (1) the specific JPM house view applied to a security or market; (2) a data angle the reader has not seen framed this way; (3) a reframing of the consensus that is slightly contrarian but defensible; (4) a clear "what to do" that commits to a recommendation a reader can act on.<br /><br />
+            The GIS brand is built on differentiated, conviction-led investment thinking. Every piece published under the JPM Private Bank name should reflect that. If it does not, do not publish it.
           </StyleSection>
         </div>
       )}
 
+      {/* Content Scoring */}
       {section === 'scoring' && (
-        <div style={{ padding: '28px 32px', maxWidth: 760 }}>
-          <div style={{ fontFamily: 'Georgia, serif', fontSize: 22, color: '#0A1A2F', fontWeight: 400, marginBottom: 6 }}>Content Quality Scoring</div>
-          <div style={{ fontSize: 13, color: '#4A5568', marginBottom: 28, lineHeight: 1.7 }}>Each published piece is scored on 10 criteria. The QA scoring engine uses claude-haiku-4-5 (500 tokens) to evaluate content programmatically. Scores are stored per item in the library and used to surface high-quality content in the Related Content panel.</div>
-          <div style={{ display: 'grid', gap: 10 }}>
+        <div style={{ padding: '28px 32px', maxWidth: 800 }}>
+          <div style={{ fontFamily: 'Georgia, serif', fontSize: 24, color: '#0A1A2F', fontWeight: 400, marginBottom: 8 }}>Content Quality Scoring</div>
+          <div style={{ fontSize: 13, color: '#4A5568', marginBottom: 28, lineHeight: 1.8, maxWidth: 680 }}>Each published piece can be scored on 10 criteria by the AI scoring engine. The engine uses claude-haiku-4-5 (500 tokens) to evaluate the content programmatically and returns a score from 0.0–5.0. Scores are stored per item in the library and used to surface high-quality content in Related Content suggestions.</div>
+          <div style={{ display: 'grid', gap: 10, marginBottom: 28 }}>
             {scoringCriteria.map((cr, i) => (
-              <div key={i} style={{ background: '#fff', border: '1px solid #E8E0D0', borderRadius: 8, padding: '12px 16px', display: 'flex', alignItems: 'flex-start', gap: 14 }}>
-                <div style={{ minWidth: 44, textAlign: 'center' }}>
-                  <div style={{ fontSize: 16, fontWeight: 800, color: '#0A1A2F' }}>{cr.weight}%</div>
-                  <div style={{ fontSize: 8, color: '#4A5568', textTransform: 'uppercase', letterSpacing: '0.05em' }}>weight</div>
+              <div key={i} style={{ background: '#fff', border: '1px solid #E8E0D0', borderRadius: 8, padding: '14px 18px', display: 'flex', alignItems: 'flex-start', gap: 16 }}>
+                <div style={{ minWidth: 52, textAlign: 'center', paddingTop: 2 }}>
+                  <div style={{ fontSize: 18, fontWeight: 800, color: '#0A1A2F', lineHeight: 1 }}>{cr.weight}%</div>
+                  <div style={{ fontSize: 8, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.06em', marginTop: 2 }}>weight</div>
                 </div>
                 <div>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: '#0A1A2F', marginBottom: 3 }}>{cr.label}</div>
-                  <div style={{ fontSize: 12, color: '#4A5568', lineHeight: 1.6 }}>{cr.desc}</div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: '#0A1A2F', marginBottom: 4 }}>{cr.label}</div>
+                  <div style={{ fontSize: 12, color: '#4A5568', lineHeight: 1.7 }}>{cr.desc}</div>
                 </div>
               </div>
             ))}
           </div>
-          <div style={{ marginTop: 20, padding: '14px 16px', background: '#F7F4EF', borderRadius: 8, border: '1px solid #E8E0D0' }}>
-            <div style={{ fontSize: 12, fontWeight: 700, color: '#0A1A2F', marginBottom: 4 }}>How scoring works</div>
-            <div style={{ fontSize: 12, color: '#4A5568', lineHeight: 1.7 }}>Click the QA Score button on any library item to trigger an AI evaluation. The model reads the full content and returns a score from 0.0–5.0 for each criterion, weighted by the percentages above. A combined score of 4.0+ indicates high-quality, publishable content. Scores are stored on the item and used to rank related content suggestions.</div>
+          <div style={{ padding: '16px 20px', background: '#F7F4EF', borderRadius: 8, border: '1px solid #E8E0D0', marginBottom: 20 }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: '#0A1A2F', marginBottom: 6 }}>How scoring works</div>
+            <div style={{ fontSize: 12, color: '#4A5568', lineHeight: 1.7 }}>Click the ★ QA Score button on any library item to trigger an evaluation. The model reads the full content and scores each criterion from 0.0–5.0, weighted by the percentages above. Combined score of 4.0+ indicates high-quality, publishable content. 3.5–4.0 is good but needs polish. Below 3.5 needs substantive revision.</div>
+          </div>
+          <div style={{ padding: '16px 20px', background: '#FFF9EE', borderRadius: 8, border: '1px solid #E8E0D0' }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: '#0A1A2F', marginBottom: 6 }}>Using scores in the library</div>
+            <div style={{ fontSize: 12, color: '#4A5568', lineHeight: 1.7 }}>Scores are stored on library items and displayed as ★ X.X in the library card. The Related Content panel (right side of editor) uses qScore as a ranking signal — pieces with higher scores are weighted more heavily in related content suggestions. This creates a feedback loop: the better the content, the more it surfaces for advisors building new pieces.</div>
           </div>
         </div>
       )}
@@ -8637,24 +8702,29 @@ ${sectionsText}`;
 
     try {
       let raw = '';
+      const isII = activeTemplate === 'ideasInsights';
+      const isMM = activeTemplate === 'macroMarkets';
+      const useHighPower = isII || isMM;
       if (useSearch) {
         const TOOLS = [{ type: 'web_search_20250305', name: 'web_search' }];
-        let msgs = [{ role: 'user', content: msg }];
-        for (let i = 0; i < 3; i++) {
-          const chunk = await callClaude({ model: 'claude-haiku-4-5-20251001', max_tokens: 1000, tools: TOOLS, messages: msgs });
-          // callClaude returns text directly
-          raw += chunk;
-          break;
-          break; // single call — tool use not supported via SSE in this context
-        }
+        const msgs = [{ role: 'user', content: msg }];
+        const chunk = await callClaude({
+          model: useHighPower ? 'claude-sonnet-4-20250514' : 'claude-haiku-4-5-20251001',
+          max_tokens: useHighPower ? 16000 : 2000,
+          system: isII
+            ? 'You are a senior J.P. Morgan Private Bank GIS strategist. Search for current data then write a full Ideas & Insights piece. Return ONLY XML. Both CHART tags with real numerical data are required — never omit them. Use consistent units within each chart.'
+            : 'You are a JPMorgan Private Bank content strategist. Return only XML using the exact tags provided.',
+          tools: TOOLS,
+          messages: msgs
+        });
+        raw += chunk;
       } else {
         const raw0 = await callClaude({
-            model: 'claude-haiku-4-5-20251001', max_tokens: 1200,
-            system: 'You are a JPMorgan Private Bank content strategist. Return only XML using the exact tags provided. No JSON, no markdown, no explanation.',
-            messages: [{ role: 'user', content: msg }]
-          });
+          model: 'claude-haiku-4-5-20251001', max_tokens: 2000,
+          system: 'You are a JPMorgan Private Bank content strategist. Return only XML using the exact tags provided. No JSON, no markdown, no explanation.',
+          messages: [{ role: 'user', content: msg }]
+        });
         raw += raw0;
-
       }
 
       if (!raw) { setGenerateError('No response from API. Please try again.'); return; }
@@ -8674,7 +8744,7 @@ ${sectionsText}`;
         eventTrigger: currentContent.eventTrigger,
         ...(isDMU ? { title: currentContent.title, metrics: currentContent.metrics, clientFlow: currentContent.clientFlow, region: currentContent.region } : {})
       };
-      let finalParsed = { ...keep, ...parsed, ...(isDMU ? { title: currentContent.title } : {}) };
+      let finalParsed = { ...keep, ...parsed, ...(isDMU ? { title: currentContent.title } : {}), ...(parsed.charts ? { charts: parsed.charts } : {}) };
       if (isDeskComm && parsed.sections?.length) {
         // Merge all section content into one paragraph for the single textarea
         const merged = parsed.sections.map(s => s.content).filter(Boolean).join(' ');
